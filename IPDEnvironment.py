@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import torch
 from typing import List, Tuple, Dict
 
 COOPERATE = 0
@@ -21,8 +22,19 @@ class IPDEnvironment:
         return self.get_state()
     
     # Returns the most recent state (previous moves) for agents
-    def get_state(self):
-        return self.history[-1] if self.history else None
+    def get_state(self, k, actor = 1):
+        if len(self.history) < k:
+            # pad on right with 2s
+            padded_history = self.history + [(2, 2)] * (k - len(self.history))
+            state = torch.tensor([item[:2] for item in padded_history])
+        else:
+            state = torch.tensor([item[:2] for item in self.history[-k:]])
+        
+        if actor == 1:
+            # state should be THEIR ACTION, MY ACTION
+            state = torch.flip(state, dims = [0])
+        
+        return state
     
     # Executes next round and updates state
     def step(self, action1, action2):

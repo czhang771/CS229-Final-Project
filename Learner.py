@@ -2,6 +2,8 @@ import torch
 import numpy as np
 from abc import ABC, abstractmethod
 from Trajectory import Trajectory
+from Optimizer import Optimizer
+from Model import Model
 
 # states should be tensor of shape (n, 2)
 # actions should be tensor of shape (n, 1)
@@ -9,13 +11,15 @@ from Trajectory import Trajectory
 # but note that the policy will see *the last k steps in the trajectory* (padded) as input
 
 class Learner(ABC):
-    def __init__(self, model, device):
+    """Base class for all reinforcement learning algorithms (including optimizer + model)"""
+    def __init__(self, model: Model, device: torch.device, optimizer: Optimizer, terminal: bool = True):
         self.model = model
         self.device = device
         self.terminal = True
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr = 0.001)
+        self.optimizer = optimizer
     
-    def act(self, state, epsilon = 0.0):
+    def act(self, state: torch.Tensor, epsilon: float = 0.0) -> int:
+        """Act on a state with epsilon-greedy policy; set 0 for greedy, 1 for completely random"""
         logits = self.model(state)
         if np.random.rand() < epsilon:
             # sample from distribution, NOT randomly
@@ -27,29 +31,46 @@ class Learner(ABC):
         return int(action)
 
     @abstractmethod
+    # using torch loss functions to do updates, rather than directly computing gradients
     def loss(self):
         pass
 
 
 class PolicyGradientLearner(Learner):
-    def __init__(self, model, device):
-        super().__init__(model, device)
+    """Basic REINFORCE policy gradient learner with cross-trajectory baseline"""
+    def __init__(self, model: Model, device: torch.device, optimizer: Optimizer, terminal: bool = True):
+        super().__init__(model, device, optimizer, terminal)
 
-    def loss(self, taus: list[Trajectory], gamma: float):
+    def loss(self, taus: list[Trajectory], gamma: float) -> torch.Tensor:
         # taus = list of trajectories
-        R_t = [taus[i].get_reward_sums(gamma = gamma, terminal = self.terminal) for i in range(0, len(taus))]
-        R_t = torch.stack(R_t)
-        
-        # calculate advantage as the average across all states (boring)
-        A_t = R_t - torch.mean(R_t, dim = 0)
+        losses = []
+        all_Rt = []
 
-        # compute log probs
-        logits = torch.stack(taus.get_states())
-        log_probs = torch.log(torch.softmax(logits, dim = 1))
-        action_log_probs = torch.gather(log_probs, dim = 1, index = taus.get_actions())
+        for trajectory in taus:
+            R_t = trajectory.get_reward_sums(gamma = gamma, terminal = self.terminal)
+            all_Rt.append(R_t)
         
-        policy_loss = -1 * torch.sum(action_log_probs * A_t)
-        return policy_loss
+        # compute baseline as average of discounted rewards across all trajectories
+        baseline = torch.cat(all_Rt).mean()
+        
+        for i, trajectory in enumerate(taus):
+            actions = trajectory.get_actions()
+            states = trajectory.get_states()
+
+            # compute advantage
+            R_t = all_Rt[i]
+            A_t = R_t - baseline
+
+            # get logits, compute log probs
+            logits = self.model(states)
+            log_probs = torch.log_softmax(logits, dim = 1)
+            action_log_probs = torch.gather(log_probs, dim = 1, index = actions)
+            
+            # compute policy 'loss' (multiply by -1 to do EV maximization)
+            policy_loss = -1 * torch.sum(action_log_probs * A_t)
+            losses.append(policy_loss)
+        
+        return torch.tensor(losses).mean()
 
 
 class ActorCriticLearner(Learner):
@@ -58,15 +79,6 @@ class ActorCriticLearner(Learner):
 
     def act(self, state):
         pass
-
-
-class DQNLearner(Learner):
-    def __init__(self, model, device):
-        super().__init__(model, device)
-
-    def act(self, state):
-        pass
-
 
 class PPOLearner(Learner):
     def __init__(self, model, device):

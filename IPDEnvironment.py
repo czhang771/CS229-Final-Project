@@ -21,6 +21,7 @@ class IPDEnvironment:
         self.payoff2 = 0
         self.k = k
         self.current_step = 0
+        self.history = []
         self.reset()
 
     # Resets the environment state for a new game

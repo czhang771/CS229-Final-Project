@@ -6,6 +6,7 @@ from Learner import PolicyGradientLearner, ActorCriticLearner, DQNLearner, PPOLe
 from Strategy import *
 from Trajectory import Trajectory
 import matplotlib.pyplot as plt
+from typing import Union
 
 AGENT = 1
 PAYOFF_MATRIX = {
@@ -18,22 +19,32 @@ PAYOFF_MATRIX = {
 class Trainer:
     """Base class for all experiments."""
 
-    def __init__(self, env: IPDEnvironment, learner: PolicyGradientLearner, opponent: Strategy, k: int = 2):
+    def __init__(self, env: IPDEnvironment, learner: PolicyGradientLearner, opponent: Union[Strategy, list[Strategy]], k: int = 2):
         self.env = env
         self.learner = learner
         self.opponent = opponent
+        self.n_opponents = len(opponent) if isinstance(opponent, list) else 1
         self.k = k
         self.score_history = []
 
     def rollout(self, game_length: int, num_games: int):
-        """Play num_games of length game_length against opponent, return trajectories"""
+        """Play num_games of length game_length against opponent (randomly selected), return trajectories"""
+        
         trajectories = []
+
+        # outer game loop; play many games per epoch
         for _ in range(num_games):
             self.env.reset()
+            if self.n_opponents == 1:
+                opponent = self.opponent
+            else:
+                opponent = random.choice(self.opponent)
+            
+            # inner game loop; agents do not know game length
             for _ in range(game_length):
                 state = self.env.get_state(actor = AGENT)
                 action1 = self.learner.act(state)
-                action2 = self.opponent.act(state)
+                action2 = opponent.act(state)
                 self.env.step(action1, action2)
             
             # just to be explicitly clear about order
@@ -43,6 +54,7 @@ class Trainer:
         return trajectories
 
     def evaluate(self, game_length: int, num_games: int, eval_opponent: Strategy = None):
+        """Evaluate against (potentially) different opponent"""
         if eval_opponent:
             original_opponent = self.opponent
             self.opponent = eval_opponent
@@ -57,15 +69,18 @@ class Trainer:
     
     def train(self, epochs: int, game_length: int, num_games: int):
         """Basic implementation of a train loop"""
+        
         for i in range(epochs):
             # do rollouts
             trajectories = self.rollout(game_length, num_games)
+            
             # update step
             self.learner.optimizer.zero_grad()
             loss = self.learner.loss(trajectories, gamma = 0.99)
             loss.backward()
             self.learner.optimizer.step()
 
+            # logging
             self.score_history.append(sum([t.total_payoff for t in trajectories]) / len(trajectories)) 
 
             if i % 50 == 0:

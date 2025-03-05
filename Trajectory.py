@@ -3,11 +3,14 @@ import numpy as np
 from collections import defaultdict
 
 class Trajectory:
-    def __init__(self, history, k):
+    """Store trajectory of a single game and useful utility functions"""
+    def __init__(self, history, k, my_payoff, opponent_payoff):
         # initialize trajectory from history of tuples (opponent_action, action, my_reward, opponent_reward)
         self.history = history
         self.k = k
-        
+        self.my_payoff = my_payoff # total reward, summed across games
+        self.opponent_payoff = opponent_payoff # total reward, summed across games
+
         # make into tensors
         if history:
             self.opponent_actions = torch.tensor([h[0] for h in history])
@@ -65,7 +68,7 @@ class Trajectory:
             return torch.empty((0, 1))
         
         if terminal:
-            terminal_reward = self.rewards[-1]
+            terminal_reward = self.total_payoff
             discounts = torch.tensor([gamma ** (self.length - i - 1) for i in range(self.length)])
             reward_sums = terminal_reward * discounts
         else: # dp work backwards

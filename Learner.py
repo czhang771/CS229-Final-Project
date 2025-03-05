@@ -73,3 +73,11 @@ class PPOLearner(Learner):
 
     def act(self, state):
         pass
+
+
+class GRPOLearner(Learner):
+    def __init__(self, model, device):
+        super().__init__(model, device)
+
+    def act(self, state):
+        pass

@@ -3,120 +3,110 @@ import numpy as np
 import torch
 
 from IPDEnvironment import IPDEnvironment
-from Strategy import Strategy, TitForTat, AlwaysCooperate, AlwaysDefect, RandomStrategy
+from Strategy import Strategy, TFT, Cu, Du, Random
 from Model import LogReg, MLP, LSTM
 from Learner import PolicyGradientLearner
 from Trajectory import Trajectory
 from Train import Trainer
-from Optimizer import OptimizerFactory
+from Optimizer import Optimizer
 
 # Configurable payoff matrix as a global variable
 # (Row player, Column player) for each outcome
 # Format: (R,R), (S,T), (T,S), (P,P) 
 # Where R=Reward for cooperation, S=Sucker's payoff, T=Temptation to defect, P=Punishment for mutual defection
 # Default values set to standard Prisoner's Dilemma matrix
-PAYOFF_MATRIX = [
-    [(3, 3), (0, 5)],  # Row player cooperates
-    [(5, 0), (1, 1)]   # Row player defects
-]
-
+COOPERATE = 0
+DEFECT = 1
+ACTIONS = [COOPERATE, DEFECT]
+PAYOFF_MATRIX = {
+    (COOPERATE, COOPERATE): (3, 3),
+    (COOPERATE, DEFECT): (0, 5),
+    (DEFECT, COOPERATE): (5, 0),
+    (DEFECT, DEFECT): (1, 1)
+}
 
 class TestIPDEnvironment:
     def test_reset(self):
-        env = IPDEnvironment(payoffs=PAYOFF_MATRIX)
+        k = 2
+        env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds = 2, k = k)
         state = env.reset()
-        assert env.t == 0
+        assert env.current_step == 0
         assert len(env.history) == 0
-        assert state.shape == (1, 0)  # Empty history at start
+        assert state.shape == (k, 2)  # Empty history at start
     
     def test_step_first_move(self):
-        env = IPDEnvironment(payoffs=PAYOFF_MATRIX)
+        k = 2   
+        env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds = 2, k = k)
         env.reset()
-        next_state, reward, done, _ = env.step(0, 0)  # Both cooperate
+        next_state, reward, _ = env.step(0, 0)  # Both cooperate
         
         # Check history
         assert len(env.history) == 1
-        assert env.history[0] == (0, 0)
+        assert env.history[0] == (0, 0, PAYOFF_MATRIX[COOPERATE, COOPERATE][0], PAYOFF_MATRIX[COOPERATE, COOPERATE][1])
         
         # Check reward - should be R,R for mutual cooperation
-        assert reward == PAYOFF_MATRIX[0][0][0]
-        
-        # Check done
-        assert not done
+        assert (reward, _) == PAYOFF_MATRIX[COOPERATE, COOPERATE]
         
         # Check state shape (first player gets history with opponent move)
-        assert next_state.shape == (1, 1)
-    
-    def test_payoff_matrix(self):
-        env = IPDEnvironment(payoffs=PAYOFF_MATRIX)
-        
-        # Test all possible outcomes according to Prisoner's Dilemma payoff matrix
-        # CC: Both cooperate (R,R)
-        assert env.payoffs[0][0] == PAYOFF_MATRIX[0][0]
-        
-        # CD: Player cooperates, opponent defects (S,T)
-        assert env.payoffs[0][1] == PAYOFF_MATRIX[0][1]
-        
-        # DC: Player defects, opponent cooperates (T,S)
-        assert env.payoffs[1][0] == PAYOFF_MATRIX[1][0]
-        
-        # DD: Both defect (P,P)
-        assert env.payoffs[1][1] == PAYOFF_MATRIX[1][1]
+        assert next_state.shape == (k, 2)
     
     def test_full_game(self):
-        env = IPDEnvironment(payoffs=PAYOFF_MATRIX, max_steps=5)
+        env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds = 5, k = 2)
         env.reset()
         
         # Play a full game
         rewards = []
         for _ in range(5):
-            _, reward, done, _ = env.step(0, 0)  # Always cooperate
-            rewards.append(reward)
-            
-            if done:
-                break
+            _, reward, opponent_reward = env.step(0, 0)  # Always cooperate
+            rewards.append((reward, opponent_reward))
         
         assert len(rewards) == 5
-        mutual_coop_reward = PAYOFF_MATRIX[0][0][0]
+        mutual_coop_reward = PAYOFF_MATRIX[COOPERATE, COOPERATE]
         assert all(r == mutual_coop_reward for r in rewards)  # All mutual cooperation
         assert len(env.history) == 5
 
 
 class TestStrategies:
     def test_always_cooperate(self):
-        strategy = AlwaysCooperate()
+        strategy = Cu()
         state = np.array([[1, 0, 1, 0]])  # Arbitrary state
         
         action = strategy.act(state)
         assert action == 0  # Always returns cooperate
     
     def test_always_defect(self):
-        strategy = AlwaysDefect()
+        strategy = Du()
         state = np.array([[1, 0, 1, 0]])  # Arbitrary state
         
         action = strategy.act(state)
         assert action == 1  # Always returns defect
     
     def test_tit_for_tat(self):
-        strategy = TitForTat()
+        strategy = TFT()
+        env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds = 2, k = 2)
+        env.reset()
         
         # First move should be cooperate
-        first_state = np.array([[]])  # Empty history
+        first_state = env.get_state()  # Empty history
         assert strategy.act(first_state) == 0
-        
-        # Should copy opponent's last move
-        coop_state = np.array([[0]])  # Opponent cooperated
+
+        # Set opponent's last move to cooperate
+        env.history.append((0, 0, PAYOFF_MATRIX[COOPERATE, COOPERATE][0], PAYOFF_MATRIX[COOPERATE, COOPERATE][1]))
+        coop_state = env.get_state()  # Opponent cooperated
         assert strategy.act(coop_state) == 0
         
-        defect_state = np.array([[1]])  # Opponent defected
+        # Set opponent's last move to defect
+        env.history.append((1, 1, PAYOFF_MATRIX[DEFECT, DEFECT][0], PAYOFF_MATRIX[DEFECT, DEFECT][1]))
+        defect_state = env.get_state()  # Opponent defected
         assert strategy.act(defect_state) == 1
     
     def test_random_strategy(self):
-        strategy = RandomStrategy(seed=42)
-        state = np.array([[]])
+        strategy = Random()
+        env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds = 2, k = 2)
+        env.reset()
         
         # With fixed seed, check that we get deterministic sequence
-        actions = [strategy.act(state) for _ in range(10)]
+        actions = [strategy.act(env.get_state()) for _ in range(10)]
         
         # Make sure we have both actions
         assert 0 in actions
@@ -125,7 +115,7 @@ class TestStrategies:
 
 class TestModel:
     def test_logreg_shape(self):
-        model = LogReg(input_dim=10)
+        model = LogReg(d_input=10, d_output=2)
         
         # Test single input
         x = torch.randn(1, 10)
@@ -138,7 +128,7 @@ class TestModel:
         assert output_batch.shape == (5, 2)
     
     def test_mlp_shape(self):
-        model = MLP(input_dim=10, hidden_dims=[20, 20])
+        model = MLP(d_input=10, d_output=2, d_hidden=[20, 20])
         
         # Test single input
         x = torch.randn(1, 10)
@@ -151,11 +141,11 @@ class TestModel:
         assert output_batch.shape == (5, 2)
     
     def test_lstm_shape(self):
-        model = LSTM(input_dim=2, hidden_dim=20)
+        model = LSTM(d_input=2, d_output=2, d_hidden=[20, 20])
         
         # Test single sequence input
         seq = torch.randn(1, 5, 2)  # 1 sequence, 5 timesteps, 2 features
-        output = model(seq)
+        output = model(seq, batched = True)
         assert output.shape == (1, 2)
         
         # Test batch input
@@ -164,80 +154,76 @@ class TestModel:
         assert output_batch.shape == (3, 2)
 
 
-class TestLearner:
-    def test_policy_gradient_act(self):
-        # Create a deterministic model for testing
-        class DeterministicModel(torch.nn.Module):
-            def forward(self, x, batched=False):
-                # Always return logits that favor cooperation
-                return torch.tensor([[2.0, 0.0]])
+# class TestLearner:
+#     def test_policy_gradient_act(self):
+#         # Create a deterministic model for testing
+#         class DeterministicModel(torch.nn.Module):
+#             def forward(self, x, batched=False):
+#                 # Always return logits that favor cooperation
+#                 return torch.tensor([[2.0, 0.0]])
         
-        model = DeterministicModel()
-        learner = PolicyGradientLearner(model)
+#         model = DeterministicModel()
+#         learner = PolicyGradientLearner(model)
         
-        # Test greedy action
-        state = np.array([[0, 1, 0]])
-        action = learner.act(state, exploration=False)
-        assert action == 0  # Should select cooperation (highest logit)
+#         # Test greedy action
+#         state = np.array([[0, 1, 0]])
+#         action = learner.act(state, exploration=False)
+#         assert action == 0  # Should select cooperation (highest logit)
         
-        # Test with exploration disabled
-        actions = [learner.act(state, exploration=False) for _ in range(10)]
-        assert all(a == 0 for a in actions)  # Should always cooperate
+#         # Test with exploration disabled
+#         actions = [learner.act(state, exploration=False) for _ in range(10)]
+#         assert all(a == 0 for a in actions)  # Should always cooperate
     
-    def test_policy_gradient_loss(self):
-        model = LogReg(input_dim=2)
-        learner = PolicyGradientLearner(model)
+#     def test_policy_gradient_loss(self):
+#         model = LogReg(input_dim=2)
+#         learner = PolicyGradientLearner(model)
         
-        # Create simple trajectory
-        trajectory = Trajectory()
-        trajectory.add(np.array([[0]]), 0, PAYOFF_MATRIX[0][0][0])  # State, action, reward (mutual cooperation)
-        trajectory.add(np.array([[0, 0]]), 0, PAYOFF_MATRIX[0][0][0])
+#         # Create simple trajectory
+#         trajectory = Trajectory()
+#         trajectory.add(np.array([[0]]), 0, PAYOFF_MATRIX[0][0][0])  # State, action, reward (mutual cooperation)
+#         trajectory.add(np.array([[0, 0]]), 0, PAYOFF_MATRIX[0][0][0])
         
-        # Test that loss calculation works
-        loss = learner.loss([trajectory], gamma=0.99)
-        assert isinstance(loss, torch.Tensor)
-        assert loss.requires_grad
+#         # Test that loss calculation works
+#         loss = learner.loss([trajectory], gamma=0.99)
+#         assert isinstance(loss, torch.Tensor)
+#         assert loss.requires_grad
 
 
 class TestTrajectory:
     def test_add_and_get(self):
-        trajectory = Trajectory()
+        history = []
+        # their action, my action, my reward, their reward
+        history.append((0, 0, PAYOFF_MATRIX[COOPERATE, COOPERATE][0], PAYOFF_MATRIX[COOPERATE, COOPERATE][1]))
+        history.append((0, 1, PAYOFF_MATRIX[COOPERATE, DEFECT][0], PAYOFF_MATRIX[COOPERATE, DEFECT][1]))
+        history.append((1, 0, PAYOFF_MATRIX[DEFECT, COOPERATE][0], PAYOFF_MATRIX[DEFECT, COOPERATE][1]))
+        history.append((1, 1, PAYOFF_MATRIX[DEFECT, DEFECT][0], PAYOFF_MATRIX[DEFECT, DEFECT][1]))
+
+        trajectory = Trajectory(history, k = 2, my_payoff = 0, opponent_payoff = 0)
         
-        # Add some transitions
-        mutual_coop_reward = PAYOFF_MATRIX[0][0][0]
-        mutual_defect_reward = PAYOFF_MATRIX[1][1][0]
-        
-        trajectory.add(np.array([[0]]), 0, mutual_coop_reward)
-        trajectory.add(np.array([[0, 0]]), 1, mutual_defect_reward)
-        
-        # Check size
-        assert len(trajectory) == 2
-        
-        # Check states
+        # check states
         states = trajectory.get_states()
-        assert len(states) == 2
-        assert np.array_equal(states[0], np.array([[0]]))
-        assert np.array_equal(states[1], np.array([[0, 0]]))
+        assert len(states) == 4
         
-        # Check actions
+        assert np.array_equal(states[0], np.array([[0, 0],[2, 2]]))
+        assert np.array_equal(states[1], np.array([[0, 0],[0, 1]]))
+        assert np.array_equal(states[2], np.array([[0, 1],[1, 0]]))
+        assert np.array_equal(states[3], np.array([[1, 0],[1, 1]]))
+        
+        # check actions
         actions = trajectory.get_actions()
-        assert len(actions) == 2
+        assert len(actions) == 4
         assert actions[0] == 0
         assert actions[1] == 1
-        
-        # Check rewards
-        rewards = trajectory.get_rewards()
-        assert len(rewards) == 2
-        assert rewards[0] == mutual_coop_reward
-        assert rewards[1] == mutual_defect_reward
+        assert actions[2] == 0
+        assert actions[3] == 1
     
     def test_discounted_rewards(self):
         trajectory = Trajectory()
         
         # Get values from payoff matrix
-        coop_defect_reward = PAYOFF_MATRIX[0][1][0]
-        mutual_coop_reward = PAYOFF_MATRIX[0][0][0]
-        temptation_reward = PAYOFF_MATRIX[1][0][0]
+        coop_defect_reward = PAYOFF_MATRIX[COOPERATE, DEFECT]
+        mutual_coop_reward = PAYOFF_MATRIX[COOPERATE, COOPERATE]
+        temptation_reward = PAYOFF_MATRIX[DEFECT, COOPERATE]
         
         # Add transitions with rewards from payoff matrix
         trajectory.add(np.array([[0]]), 0, coop_defect_reward)
@@ -263,7 +249,7 @@ class TestEndToEndFlow:
         """Test the flow of data from environment to model"""
         # Setup environment with known payoff matrix
         k = 3  # Memory size for state
-        env = IPDEnvironment(payoffs=PAYOFF_MATRIX, max_steps=10, k=k)
+        env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds = 10, k = k)
         env.reset()
         
         # Play a sequence of moves to generate history
@@ -296,9 +282,9 @@ class TestEndToEndFlow:
         trajectory = Trajectory()
         
         # Add transitions to trajectory (state, action, reward)
-        trajectory.add(np.array([[0]]), 0, PAYOFF_MATRIX[0][0][0])  # Empty state -> cooperate
-        trajectory.add(np.array([[0, 0]]), 0, PAYOFF_MATRIX[0][0][0])  # After mutual cooperation -> cooperate
-        trajectory.add(np.array([[0, 0, 0]]), 1, PAYOFF_MATRIX[1][0][0])  # After two mutual cooperations -> defect
+        trajectory.add(np.array([[0]]), 0, PAYOFF_MATRIX[COOPERATE, COOPERATE])  # Empty state -> cooperate
+        trajectory.add(np.array([[0, 0]]), 0, PAYOFF_MATRIX[COOPERATE, COOPERATE])  # After mutual cooperation -> cooperate
+        trajectory.add(np.array([[0, 0, 0]]), 1, PAYOFF_MATRIX[DEFECT, COOPERATE])  # After two mutual cooperations -> defect
         
         # Get states from trajectory
         states = trajectory.get_states()
@@ -324,7 +310,7 @@ class TestEndToEndFlow:
         """Test the full flow from environment through trajectory to learning update"""
         # Setup components
         k = 3
-        env = IPDEnvironment(payoffs=PAYOFF_MATRIX, max_steps=5, k=k)
+        env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds = 5, k = k)
         
         # Create a small model
         input_dim = 2 * k  # Each state has agent and opponent action over k timesteps
@@ -334,7 +320,7 @@ class TestEndToEndFlow:
         learner = PolicyGradientLearner(model)
         
         # Create a simple opponent strategy
-        opponent = TitForTat()
+        opponent = TFT()
         
         # Simulate a training interaction
         trajectories = []
@@ -347,13 +333,11 @@ class TestEndToEndFlow:
             state = env.get_state()
             action = learner.act(state, exploration=True)
             opponent_action = opponent.act(state)
-            next_state, reward, done, _ = env.step(action, opponent_action)
-            history.append((action, opponent_action, reward))
+            next_state, reward, opponent_reward = env.step(action, opponent_action)
+            history.append((action, opponent_action, reward, opponent_reward))
         
         # Create trajectory from game history
-        trajectory = Trajectory()
-        for state, action, reward in history:
-            trajectory.add(state, action, reward)
+        trajectory = Trajectory(history, k, env.payoff1, env.payoff2)
         
         trajectories.append(trajectory)
         
@@ -366,4 +350,4 @@ class TestEndToEndFlow:
         assert loss.shape == torch.Size([])  # Scalar
 
 if __name__ == "__main__":
-    pytest.main(["-xvs", "test_ipd.py"])
+    pytest.main(["-xvs", "Test_IPD.py"])

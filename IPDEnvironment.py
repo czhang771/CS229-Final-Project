@@ -32,16 +32,18 @@ class IPDEnvironment:
     
     # Returns the most recent state (previous moves) for agents
     def get_state(self, actor = 1):
+        print(self.history)
         if len(self.history) < self.k:
-            # pad on right with 2s
-            padded_history = self.history + [(2, 2)] * (self.k - len(self.history))
+            # pad on left with 2s
+            padded_history = [(2, 2)] * (self.k - len(self.history)) + self.history
             state = torch.tensor([item[:2] for item in padded_history])
         else:
-            state = torch.tensor([item[:2] for item in self.history[-self.k:]])
+            state = self.history[-self.k:]
+            state = torch.tensor([item[:2] for item in state])
         
         if actor == 1:
             # recorded state should be THEIR ACTION, MY ACTION
-            state = torch.flip(state, dims = [0])
+            state = torch.flip(state, dims = [1])
         
         return state
     
@@ -58,7 +60,7 @@ class IPDEnvironment:
         self.history.append((action1, action2, reward1, reward2))
         self.current_step += 1
         # returns next state
-        return self.get_state()
+        return self.get_state(), reward1, reward2
 
     def print_game_sequence(self):
         """ Prints the entire game history for debugging. """

@@ -61,19 +61,23 @@ class MLP(Model):
         else:
             x = x.view(1, -1)
 
-        h = torch.matmul(x, self.weights[0].t()) + self.biases[0]
+        h = torch.matmul(x, self.weights[0]) + self.biases[0]
         h = torch.relu(h)
         
         for i in range(1, len(self.weights)):
-            h = torch.matmul(h, self.weights[i].t()) + self.biases[i]
+            h = torch.matmul(h, self.weights[i]) + self.biases[i]
             h = torch.relu(h)
         
         # return logits over outputs
         return h
-
 class LSTMCell(nn.Module):
     """LSTM cell implementation"""
+
     def __init__(self, d_input: int, d_output: int, d_hidden: int):
+        self.d_input = d_input
+        self.d_output = d_output
+        self.d_hidden = d_hidden
+
         super().__init__()
         # LSTM layers; note we are using concatenation rather than learning separate U weights; this is equivalent
         self.W_f = nn.Parameter(torch.randn(d_input + d_hidden, d_output))
@@ -85,27 +89,51 @@ class LSTMCell(nn.Module):
         self.b_i = nn.Parameter(torch.zeros(d_output))
         self.b_o = nn.Parameter(torch.zeros(d_output))
     
-    def forward(self, x: torch.Tensor, batched: bool = False) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, batched: bool = False) -> tuple:
+        """
+        Forward pass of LSTM Cell
+        
+        Args:
+            x: Input tensor of shape (T, D) or (B, T, D) if batched
+            batched: Whether input is batched
+            
+        Returns:
+            tuple: (outputs, (h_n, c_n))
+                - outputs: tensor containing the output features from the last layer for each time step
+                - h_n: tensor containing the hidden state for the last time step
+                - c_n: tensor containing the cell state for the last time step
+        """
         if batched:
-            # tentatively keeping sequence processing rather than flattening?
             B, T, D = x.shape
-            c_t = torch.zeros(B, self.d_output)
-            a_t = torch.zeros(B, self.d_output)
+            c_t = torch.zeros(B, self.d_output, device=x.device)
+            a_t = torch.zeros(B, self.d_output, device=x.device)
+            outputs = torch.zeros(B, T, self.d_output, device=x.device)
         else:
-            c_t = torch.zeros(1, self.d_output)
-            a_t = torch.zeros(1, self.d_output)
+            T = x.shape[0]
+            c_t = torch.zeros(1, self.d_output, device=x.device)
+            a_t = torch.zeros(1, self.d_output, device=x.device)
+            outputs = torch.zeros(T, self.d_output, device=x.device)
 
         for i in range(T):
-            x_t = x[:, i, :]
-            concat = torch.cat([x_t, a_t], dim = 1)
+            if batched:
+                x_t = x[:, i, :]
+            else:
+                x_t = x[i, :]
+
+            concat = torch.cat([x_t, a_t], dim=1)
             f_t = torch.sigmoid(torch.matmul(concat, self.W_f) + self.b_f)
             i_t = torch.sigmoid(torch.matmul(concat, self.W_i) + self.b_i)
             o_t = torch.sigmoid(torch.matmul(concat, self.W_o) + self.b_o)
             tildec_t = torch.tanh(torch.matmul(concat, self.W_c) + self.b_c)
             c_t = f_t * c_t + i_t * tildec_t
             a_t = o_t * torch.tanh(c_t)
+            
+            if batched:
+                outputs[:, i, :] = a_t
+            else:
+                outputs[i, :] = a_t
         
-        return a_t
+        return outputs, (a_t, c_t)
 
 class LSTM(Model):
     """LSTM model implementation"""
@@ -114,6 +142,9 @@ class LSTM(Model):
           with sizes in d_hidden; note in the LSTM cell the hidden and output dimensions are the same"""
         
         super().__init__()
+        self.d_input = d_input
+        self.d_output = d_output
+        self.d_hidden = d_hidden
         self.cells = nn.ModuleList()
         # use same hidden dimension and output dimension
         self.cells.append(LSTMCell(d_input, d_hidden[0], d_hidden[0]))
@@ -127,9 +158,9 @@ class LSTM(Model):
     
     def forward(self, x: torch.Tensor, batched: bool = False) -> torch.Tensor:
         for cell in self.cells:
-            x = cell(x)
+            x, (a_t, c_t) = cell(x, batched)
         
-        return self.fc_out(x)
+        return self.fc_out(a_t)
 
 if __name__ == "__main__":
     model = LSTM(10, 2, [10, 10])

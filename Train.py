@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from IPDEnvironment import IPDEnvironment
 from Model import LogReg, MLP, LSTM
-from Learner import PolicyGradientLearner, ActorCriticLearner, DQNLearner, PPOLearner
+from Learner import PolicyGradientLearner, ActorCriticLearner, PPOLearner
 from Strategy import *
 from Trajectory import Trajectory
 import matplotlib.pyplot as plt
@@ -45,7 +45,7 @@ class Trainer:
                 state = self.env.get_state(actor = AGENT)
                 action1 = self.learner.act(state)
                 action2 = opponent.act(state)
-                self.env.step(action1, action2)
+                next_state, reward1, reward2 = self.env.step(action1, action2)
             
             # just to be explicitly clear about order
             if AGENT == 1: trajectories.append(Trajectory(self.env.history, self.k, self.env.payoff1, self.env.payoff2))

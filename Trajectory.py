@@ -29,21 +29,40 @@ class Trajectory:
     
     def get_states(self) -> torch.Tensor:
         """
-        Returns a tensor of shape (length, k, 2) where each element is the k-windowed state
+        Returns a tensor of shape (length, k, 2) where each element is the k-windowed state.
+        States are arranged chronologically from left to right.
+        Right padding with 2s is used when there isn't enough history.
+        
+        Examples (assuming k=3):
+        - At position 0: [0's action, 2, 2]  (only 1 history item, rest is padding)
+        - At position 1: [0's action, 1's action, 2]  (2 history items, 1 padding)
+        - At position 2: [0's action, 1's action, 2's action]  (3 history items, no padding)
+        - At position 3: [1's action, 2's action, 3's action]  (3 history items, no padding)
         """
         if self.length == 0:
             return torch.empty((0, self.k, 2))
-        
-        # use 2 padding (one-hot for states, padding dimension)
+            
+        # Initialize all values with padding (2)
         padded_states = torch.full((self.length, self.k, 2), 2)
         
         for i in range(self.length):
-            for j in range(self.k):
-                if i - j >= 0:
-                    padded_states[i, j, 0] = self.opponent_actions[i - j]
-                    padded_states[i, j, 1] = self.actions[i - j]
+            # For each position i in the sequence
+            
+            # Determine how many valid history items we have (can't exceed k)
+            valid_items = min(i + 1, self.k)
+            
+            for j in range(valid_items):
+                # j goes from 0 to valid_items-1
+                # We want to place the oldest history first (at position 0)
+                # and the newest history last (at position valid_items-1)
+                
+                # Calculate the actual history index to use
+                history_idx = i - (valid_items - 1) + j
+                
+                # Fill in the action data
+                padded_states[i, j, 0] = self.opponent_actions[history_idx]
+                padded_states[i, j, 1] = self.actions[history_idx]
         
-        # return n x k x 2 tensor of states
         return padded_states
     
     def get_actions(self) -> torch.Tensor:

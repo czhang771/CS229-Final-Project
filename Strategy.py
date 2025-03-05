@@ -55,14 +55,23 @@ Cooperates on the first round and imitates its opponent's previous move thereaft
 """
 class TFT(Strategy):
     def act(self, state):
-        return COOPERATE if not state else state[1]
+        last = state[-1][1]
+        print(state, state[-1])
+        if last == 2:
+            return COOPERATE
+        else:
+            return last
 
 """
 Defects on the first round and imitates its opponent's previous move thereafter.
 """
 class STFT(Strategy):
     def act(self, state):
-        return DEFECT if not state else state[1]
+        last = state[-1][1]
+        if last == 2:
+            return DEFECT
+        else:
+            return last
  
 """
  Cooprates on the first round and after its opponent cooperates. Following a defection,it cooperates with probability 

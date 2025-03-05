@@ -13,6 +13,7 @@ class Trajectory:
 
         # make into tensors
         if history:
+            # history is list of tuples (opponent_action, action, my_reward, opponent_reward)
             self.opponent_actions = torch.tensor([h[0] for h in history])
             self.actions = torch.tensor([h[1] for h in history])
             self.rewards = torch.tensor([h[2] for h in history]).float()
@@ -27,6 +28,9 @@ class Trajectory:
         self.length = len(history)
     
     def get_states(self) -> torch.Tensor:
+        """
+        Returns a tensor of shape (length, k, 2) where each element is the k-windowed state
+        """
         if self.length == 0:
             return torch.empty((0, self.k, 2))
         
@@ -68,7 +72,7 @@ class Trajectory:
             return torch.empty((0, 1))
         
         if terminal:
-            terminal_reward = self.total_payoff
+            terminal_reward = self.my_payoff
             discounts = torch.tensor([gamma ** (self.length - i - 1) for i in range(self.length)])
             reward_sums = terminal_reward * discounts
         else: # dp work backwards

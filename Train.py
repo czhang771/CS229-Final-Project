@@ -8,15 +8,21 @@ from Trajectory import Trajectory
 import matplotlib.pyplot as plt
 
 AGENT = 1
+PAYOFF_MATRIX = {
+    (COOPERATE, COOPERATE): (3, 3),
+    (COOPERATE, DEFECT): (0, 5),
+    (DEFECT, COOPERATE): (5, 0),
+    (DEFECT, DEFECT): (1, 1)
+}
 
 class Trainer:
     """Base class for all experiments."""
 
-    def __init__(self, env: IPDEnvironment, learner: PolicyGradientLearner, opponent: Strategy, history_length: int = 2):
+    def __init__(self, env: IPDEnvironment, learner: PolicyGradientLearner, opponent: Strategy, k: int = 2):
         self.env = env
         self.learner = learner
         self.opponent = opponent
-        self.history_length = history_length
+        self.k = k
         self.score_history = []
 
     def rollout(self, game_length: int, num_games: int):
@@ -25,14 +31,14 @@ class Trainer:
         for _ in range(num_games):
             self.env.reset()
             for _ in range(game_length):
-                state = self.env.get_state(k = self.history_length, actor = AGENT)
+                state = self.env.get_state(actor = AGENT)
                 action1 = self.learner.act(state)
                 action2 = self.opponent.act(state)
                 self.env.step(action1, action2)
             
             # just to be explicitly clear about order
-            if AGENT == 1: trajectories.append(Trajectory(self.env.history, self.history_length, self.env.payoff1, self.env.payoff2))
-            else: trajectories.append(Trajectory(self.env.history, self.history_length, self.env.payoff2, self.env.payoff1))
+            if AGENT == 1: trajectories.append(Trajectory(self.env.history, self.k, self.env.payoff1, self.env.payoff2))
+            else: trajectories.append(Trajectory(self.env.history, self.k, self.env.payoff2, self.env.payoff1))
         
         return trajectories
 
@@ -75,3 +81,13 @@ class Trainer:
         # plot score over time
         plt.plot(self.score_history)
         plt.savefig(path)
+    
+
+if __name__ == "__main__":
+    k = 50
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    env = IPDEnvironment(payoff_matrix = PAYOFF_MATRIX, num_rounds = 1000, k = k)
+    learner = PolicyGradientLearner(LogReg(d_input = 2 * k, d_output = 2), device)
+    opponent = Random()
+    trainer = Trainer(env, learner, opponent)
+    trainer.train(1000, 1000, 10)

@@ -13,6 +13,7 @@ class Learner(ABC):
         self.model = model
         self.device = device
         self.terminal = True
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr = 0.001)
     
     def act(self, state, epsilon = 0.0):
         logits = self.model(state)
@@ -23,7 +24,7 @@ class Learner(ABC):
             # greedy
             action = torch.argmax(logits, dim = 1)
         
-        return action
+        return int(action)
 
     @abstractmethod
     def loss(self):

@@ -6,32 +6,40 @@ from typing import List, Tuple, Dict
 COOPERATE = 0
 DEFECT = 1
 ACTIONS = [COOPERATE, DEFECT]
+PAYOFF_MATRIX = {
+    (COOPERATE, COOPERATE): (3, 3),
+    (COOPERATE, DEFECT): (0, 5),
+    (DEFECT, COOPERATE): (5, 0),
+    (DEFECT, DEFECT): (1, 1)
+}
 
 class IPDEnvironment:
-    def __init__(self, payoff_matrix, num_rounds):
+    def __init__(self, payoff_matrix, num_rounds, k):
         self.payoff_matrix = payoff_matrix
         self.num_rounds = num_rounds
         self.payoff1 = 0
         self.payoff2 = 0
+        self.k = k
+        self.current_step = 0
         self.reset()
 
     # Resets the environment state for a new game
-    def reset(self):
+    def reset(self, actor = 1):
         self.history = []
-        self.current_iteration = 0
-        return self.get_state()
+        self.current_step = 0
+        return self.get_state(actor = actor)
     
     # Returns the most recent state (previous moves) for agents
-    def get_state(self, k, actor = 1):
-        if len(self.history) < k:
+    def get_state(self, actor = 1):
+        if len(self.history) < self.k:
             # pad on right with 2s
-            padded_history = self.history + [(2, 2)] * (k - len(self.history))
+            padded_history = self.history + [(2, 2)] * (self.k - len(self.history))
             state = torch.tensor([item[:2] for item in padded_history])
         else:
-            state = torch.tensor([item[:2] for item in self.history[-k:]])
+            state = torch.tensor([item[:2] for item in self.history[-self.k:]])
         
         if actor == 1:
-            # state should be THEIR ACTION, MY ACTION
+            # recorded state should be THEIR ACTION, MY ACTION
             state = torch.flip(state, dims = [0])
         
         return state

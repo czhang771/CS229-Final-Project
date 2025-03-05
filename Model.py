@@ -3,6 +3,8 @@ import torch.nn as nn
 import numpy as np
 from abc import ABC, abstractmethod
 
+# TODO: get rid of batching or make batching consistent with rollouts
+
 # underlying model for learners
 class Model(ABC, nn.Module):
     def __init__(self):
@@ -22,8 +24,14 @@ class LogReg(Model):
         nn.init.kaiming_normal_(self.weights)
         self.bias = nn.Parameter(torch.zeros(d_output))
 
-    def forward(self, x):
-        B, D = x.shape[0]
+    def forward(self, x, batched = False):
+        if batched:
+            # flatten dimensions 1:
+            B = x.shape[0]
+            x = x.view(B, -1).float()
+        else:
+            x = x.view(1, -1).float()
+        
         h = torch.matmul(x, self.weights) + self.bias
         # return logits over outputs
         return h
@@ -46,8 +54,13 @@ class MLP(Model):
             nn.init.kaiming_normal_(self.weights[i])
             nn.init.zeros_(self.biases[i])
     
-    def forward(self, x):
-        B = x.shape[0]
+    def forward(self, x, batched = False):
+        if batched:
+            B = x.shape[0]
+            x = x.view(B, -1)
+        else:
+            x = x.view(1, -1)
+
         h = torch.matmul(x, self.weights[0].t()) + self.biases[0]
         h = torch.relu(h)
         
@@ -71,10 +84,15 @@ class LSTMCell(nn.Module):
         self.b_i = nn.Parameter(torch.zeros(d_output))
         self.b_o = nn.Parameter(torch.zeros(d_output))
     
-    def forward(self, x):
-        B, T, D = x.shape
-        c_t = torch.zeros(B, self.d_output)
-        a_t = torch.zeros(B, self.d_output)
+    def forward(self, x, batched = False):
+        if batched:
+            # tentatively keeping sequence processing rather than flattening
+            B, T, D = x.shape
+            c_t = torch.zeros(B, self.d_output)
+            a_t = torch.zeros(B, self.d_output)
+        else:
+            c_t = torch.zeros(1, self.d_output)
+            a_t = torch.zeros(1, self.d_output)
 
         for i in range(T):
             x_t = x[:, i, :]

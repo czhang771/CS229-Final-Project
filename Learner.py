@@ -51,7 +51,7 @@ class PolicyGradientLearner(Learner):
             all_Rt.append(R_t)
         
         # compute baseline as average of discounted rewards across all trajectories
-        baseline = torch.cat(all_Rt).mean()
+        baseline = torch.cat(all_Rt).mean().detach()
         
         for i, trajectory in enumerate(taus):
             actions = trajectory.get_actions()
@@ -61,8 +61,8 @@ class PolicyGradientLearner(Learner):
             R_t = all_Rt[i]
             A_t = R_t - baseline
 
-            # get logits, compute log probs
-            logits = self.model(states)
+            # get logits, compute log probs, make sure properly batched
+            logits = self.model(states, batched = True)
             log_probs = torch.log_softmax(logits, dim = 1)
             action_log_probs = torch.gather(log_probs, dim = 1, index = actions)
             
@@ -70,7 +70,7 @@ class PolicyGradientLearner(Learner):
             policy_loss = -1 * torch.sum(action_log_probs * A_t)
             losses.append(policy_loss)
         
-        return torch.tensor(losses).mean()
+        return torch.stack(losses).mean()
 
 
 class ActorCriticLearner(Learner):

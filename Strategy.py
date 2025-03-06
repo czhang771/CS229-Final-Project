@@ -56,7 +56,6 @@ Cooperates on the first round and imitates its opponent's previous move thereaft
 class TFT(Strategy):
     def act(self, state):
         last = state[-1][1]
-        print(state, state[-1])
         if last == 2:
             return COOPERATE
         else:

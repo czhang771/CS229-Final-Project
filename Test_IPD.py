@@ -154,40 +154,42 @@ class TestModel:
         assert output_batch.shape == (3, 2)
 
 
-# class TestLearner:
-#     def test_policy_gradient_act(self):
-#         # Create a deterministic model for testing
-#         class DeterministicModel(torch.nn.Module):
-#             def forward(self, x, batched=False):
-#                 # Always return logits that favor cooperation
-#                 return torch.tensor([[2.0, 0.0]])
+class TestLearner:
+    def test_policy_gradient_act(self):
+        # Create a deterministic model for testing
+        class DeterministicModel(torch.nn.Module):
+            def forward(self, x, batched=False):
+                # Always return logits that favor cooperation
+                return torch.tensor([[100.0, 0.0]])
         
-#         model = DeterministicModel()
-#         learner = PolicyGradientLearner(model)
+        model = DeterministicModel()
+        learner = PolicyGradientLearner(model, device = "cpu", optimizer = None, terminal = False)
         
-#         # Test greedy action
-#         state = np.array([[0, 1, 0]])
-#         action = learner.act(state, exploration=False)
-#         assert action == 0  # Should select cooperation (highest logit)
+        # Test greedy action
+        state = torch.tensor([[0, 1],[1, 0]])
+        action = learner.act(state, epsilon = 0)
+        assert action == 0
         
-#         # Test with exploration disabled
-#         actions = [learner.act(state, exploration=False) for _ in range(10)]
-#         assert all(a == 0 for a in actions)  # Should always cooperate
+        # Test with full exploration
+        actions = [learner.act(state, epsilon = 1) for _ in range(10)]
+        assert all(a == 0 for a in actions) # hopefully! like most definitely
     
-#     def test_policy_gradient_loss(self):
-#         model = LogReg(input_dim=2)
-#         learner = PolicyGradientLearner(model)
+    def test_policy_gradient_loss(self):
+        k = 4
+        model = LogReg(d_input = k * 2, d_output = 2)
+        learner = PolicyGradientLearner(model, device = "cpu", optimizer = None, terminal = False)
         
-#         # Create simple trajectory
-#         trajectory = Trajectory()
-#         trajectory.add(np.array([[0]]), 0, PAYOFF_MATRIX[0][0][0])  # State, action, reward (mutual cooperation)
-#         trajectory.add(np.array([[0, 0]]), 0, PAYOFF_MATRIX[0][0][0])
+        # Create simple trajectory
+        env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds = 10, k = k)
+        env.reset()
+        env.step(0, 0)
+        env.step(1, 1)
+        trajectory = Trajectory(env.history, k = k, my_payoff = env.payoff1, opponent_payoff = env.payoff2)
         
-#         # Test that loss calculation works
-#         loss = learner.loss([trajectory], gamma=0.99)
-#         assert isinstance(loss, torch.Tensor)
-#         assert loss.requires_grad
-
+        # Test that loss calculation works
+        loss = learner.loss([trajectory], gamma=0.99)
+        assert isinstance(loss, torch.Tensor)
+        assert loss.requires_grad
 
 class TestTrajectory:
     def test_add_and_get(self):
@@ -218,136 +220,97 @@ class TestTrajectory:
         assert actions[3] == 1
     
     def test_discounted_rewards(self):
-        trajectory = Trajectory()
+        env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds = 3, k = 3)
+        env.reset()
         
-        # Get values from payoff matrix
-        coop_defect_reward = PAYOFF_MATRIX[COOPERATE, DEFECT]
-        mutual_coop_reward = PAYOFF_MATRIX[COOPERATE, COOPERATE]
-        temptation_reward = PAYOFF_MATRIX[DEFECT, COOPERATE]
+        # get values from payoff matrix
+        coop_defect_reward = PAYOFF_MATRIX[COOPERATE, DEFECT][0]
+        mutual_coop_reward = PAYOFF_MATRIX[COOPERATE, COOPERATE][0]
+        temptation_reward = PAYOFF_MATRIX[DEFECT, COOPERATE][0]
         
         # Add transitions with rewards from payoff matrix
-        trajectory.add(np.array([[0]]), 0, coop_defect_reward)
-        trajectory.add(np.array([[0, 0]]), 0, mutual_coop_reward)
-        trajectory.add(np.array([[0, 0, 0]]), 0, temptation_reward)
+        # my action, opponent action
+        env.step(0, 1)
+        env.step(0, 0)
+        env.step(1, 0)
         
-        # Get discounted sums with gamma=0.5
+        # create trajectory
+        trajectory = Trajectory(env.history, k = 3, my_payoff = env.payoff1, opponent_payoff = env.payoff2)
+
+        # get discounted sums with gamma=0.5
         # Expected: [r1 + 0.5*r2 + 0.25*r3, r2 + 0.5*r3, r3]
         gamma = 0.5
-        discounted = trajectory.get_discounted_rewards(gamma=gamma)
+        discounted = trajectory.get_reward_sums(gamma=gamma)
         
-        expected = np.array([
+        expected = torch.tensor([
             coop_defect_reward + gamma*mutual_coop_reward + gamma*gamma*temptation_reward,
             mutual_coop_reward + gamma*temptation_reward,
             temptation_reward
         ])
         
-        assert np.allclose(discounted, expected)
+        assert torch.allclose(discounted, expected)
 
 
 class TestEndToEndFlow:
     def test_environment_to_model_flow(self):
         """Test the flow of data from environment to model"""
         # Setup environment with known payoff matrix
-        k = 3  # Memory size for state
+        k = 10  # Memory size for state
         env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds = 10, k = k)
         env.reset()
         
-        # Play a sequence of moves to generate history
-        # Both cooperate, then both defect, then mixed
+        # play a sequence of moves to generate history
+        # both cooperate, then both defect, then mixed
         env.step(0, 0)  # Both cooperate
         env.step(1, 1)  # Both defect
         env.step(0, 1)  # Agent cooperates, opponent defects
+        env.step(0, 0)
+        env.step(1, 1)
         
         # Get state from environment
         state = env.get_state()
         
         # Verify state format
-        assert state.shape[0] == 1  # Batch dimension
-        assert state.shape[1] == 3  # k steps of history
+        assert state.shape[0] == k  
+        assert state.shape[1] == 2  
         
         # Create model with input dimension matching flattened state
-        input_dim = state.shape[1] * 2  # Each state has 2 values (agent and opponent actions)
-        model = LogReg(input_dim=input_dim, output_dim=2)  # 2 actions: cooperate or defect
+        input_dim = state.shape[1] * k  # Each state has 2 values (agent and opponent actions)
+        model = LogReg(d_input=input_dim, d_output=2)  # 2 actions: cooperate or defect
         
         # Test forward pass with state from environment
         logits = model(state)
         
         # Verify output format
         assert logits.shape == (1, 2)  # Should output logits for 2 actions
-        
-    def test_trajectory_to_model_flow(self):
-        """Test the flow of data from trajectory to model during training"""
-        # Create a trajectory with some known transitions
-        k = 3
-        trajectory = Trajectory()
-        
-        # Add transitions to trajectory (state, action, reward)
-        trajectory.add(np.array([[0]]), 0, PAYOFF_MATRIX[COOPERATE, COOPERATE])  # Empty state -> cooperate
-        trajectory.add(np.array([[0, 0]]), 0, PAYOFF_MATRIX[COOPERATE, COOPERATE])  # After mutual cooperation -> cooperate
-        trajectory.add(np.array([[0, 0, 0]]), 1, PAYOFF_MATRIX[DEFECT, COOPERATE])  # After two mutual cooperations -> defect
-        
-        # Get states from trajectory
+
+        trajectory = Trajectory(env.history, k = k, my_payoff = env.payoff1, opponent_payoff = env.payoff2)
         states = trajectory.get_states()
+        actions = trajectory.get_actions()
+        rewards = trajectory.get_reward_sums()
+        
+        logits = model(states, batched = True)
+        action_log_probs = torch.gather(logits, dim = 1, index = actions)
+        
+        expected = torch.tensor([logits[i, actions[i]] for i in range(len(actions.flatten()))])
+        assert torch.isclose(action_log_probs.flatten(), expected).all()
         
         # Verify states format
         assert isinstance(states, torch.Tensor)
-        assert states.shape[0] == 3  # 3 transitions
+        assert states.shape[0] == 5  # 3 transitions
         assert states.shape[2] == 2  # Each state has opponent and agent action
         
         # Flatten each state for LogReg model
         flattened_states = states.reshape(states.shape[0], -1)
         
         # Create model
-        model = LogReg(input_dim=flattened_states.shape[1], output_dim=2)
+        model = LogReg(d_input=flattened_states.shape[1], d_output=2)
         
         # Test forward pass with batch of states
         logits = model(flattened_states, batched=True)
         
         # Verify output format
-        assert logits.shape == (3, 2)  # Should output logits for each state and each action
-        
-    def test_end_to_end_learning_flow(self):
-        """Test the full flow from environment through trajectory to learning update"""
-        # Setup components
-        k = 3
-        env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds = 5, k = k)
-        
-        # Create a small model
-        input_dim = 2 * k  # Each state has agent and opponent action over k timesteps
-        model = LogReg(input_dim=input_dim, output_dim=2)
-        
-        # Setup learner
-        learner = PolicyGradientLearner(model)
-        
-        # Create a simple opponent strategy
-        opponent = TFT()
-        
-        # Simulate a training interaction
-        trajectories = []
-        
-        # Play a game
-        env.reset()
-        history = []
-        
-        for _ in range(5):  # 5 steps per game
-            state = env.get_state()
-            action = learner.act(state, exploration=True)
-            opponent_action = opponent.act(state)
-            next_state, reward, opponent_reward = env.step(action, opponent_action)
-            history.append((action, opponent_action, reward, opponent_reward))
-        
-        # Create trajectory from game history
-        trajectory = Trajectory(history, k, env.payoff1, env.payoff2)
-        
-        trajectories.append(trajectory)
-        
-        # Compute loss using the trajectory
-        loss = learner.loss(trajectories, gamma=0.99)
-        
-        # Verify loss is a scalar tensor with gradient
-        assert isinstance(loss, torch.Tensor)
-        assert loss.requires_grad
-        assert loss.shape == torch.Size([])  # Scalar
+        assert logits.shape == (5, 2)  # Should output logits for each state and each action
 
 if __name__ == "__main__":
     pytest.main(["-xvs", "Test_IPD.py"])

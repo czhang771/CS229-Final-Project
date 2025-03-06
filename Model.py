@@ -70,6 +70,8 @@ class MLP(Model):
         
         # return logits over outputs
         return h
+    
+
 class LSTMCell(nn.Module):
     """LSTM cell implementation"""
 

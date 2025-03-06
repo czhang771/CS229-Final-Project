@@ -32,7 +32,6 @@ class IPDEnvironment:
     
     # Returns the most recent state (previous moves) for agents
     def get_state(self, actor = 1):
-        print(self.history)
         if len(self.history) < self.k:
             # pad on left with 2s
             padded_history = [(2, 2)] * (self.k - len(self.history)) + self.history

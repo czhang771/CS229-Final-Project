@@ -14,13 +14,13 @@ class Trajectory:
         # make into tensors
         if history:
             # history is list of tuples (opponent_action, action, my_reward, opponent_reward)
-            self.opponent_actions = torch.tensor([h[0] for h in history])
-            self.actions = torch.tensor([h[1] for h in history])
+            self.actions = torch.tensor([h[0] for h in history])
+            self.opponent_actions = torch.tensor([h[1] for h in history])
             self.rewards = torch.tensor([h[2] for h in history]).float()
             self.opponent_rewards = torch.tensor([h[3] for h in history]).float()
         else:
-            self.opponent_actions = torch.tensor([])
             self.actions = torch.tensor([])
+            self.opponent_actions = torch.tensor([])
             self.rewards = torch.tensor([])
             self.opponent_rewards = torch.tensor([])
         
@@ -36,26 +36,37 @@ class Trajectory:
         if self.length == 0:
             return torch.empty((0, self.k, 2))
             
-        # Initialize all values with padding (2)
+        # initialize all values with padding (2)
         padded_states = torch.full((self.length, self.k, 2), 2)
         
         for i in range(self.length):
-            # for each position i in the sequence
+            history = self.history[:i]
+            if len(history) < self.k:
+                # pad on left with 2s
+                padded_history = [(2, 2)] * (self.k - len(history)) + history
+                state = torch.tensor([item[:2] for item in padded_history])
+            else:
+                state = history[-self.k:]
+                state = torch.tensor([item[:2] for item in state])
+            padded_states[i, :, :] = state
             
-            # determine how many valid history items we have (can't exceed k)
-            valid_items = min(i + 1, self.k)
+        # for i in range(self.length):
+        #     # for each position i in the sequence
             
-            for j in range(valid_items):
-                # j goes from 0 to valid_items-1
-                # we want to place the oldest history first (at position 0)
-                # and the newest history last (at position valid_items-1)
+        #     # determine how many valid history items we have (can't exceed k)
+        #     valid_items = min(i + 1, self.k)
+            
+        #     for j in range(valid_items):
+        #         # j goes from 0 to valid_items-1
+        #         # we want to place the oldest history first (at position 0)
+        #         # and the newest history last (at position valid_items-1)
                 
-                # calculate the actual history index to use
-                history_idx = i - (valid_items - 1) + j
+        #         # calculate the actual history index to use
+        #         history_idx = i - (valid_items - 1) + j
                 
-                # Fill in the action data
-                padded_states[i, j, 0] = self.opponent_actions[history_idx]
-                padded_states[i, j, 1] = self.actions[history_idx]
+        #         # Fill in the action data
+        #         padded_states[i, j, 0] = self.actions[history_idx]
+        #         padded_states[i, j, 1] = self.opponent_actions[history_idx]
         
         return padded_states
     

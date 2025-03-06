@@ -81,7 +81,7 @@ class Trainer:
             self.learner.optimizer.step()
 
             # logging
-            self.score_history.append(sum([t.total_payoff for t in trajectories]) / len(trajectories)) 
+            self.score_history.append(sum([t.my_payoff for t in trajectories]) / len(trajectories)) 
 
             if i % 50 == 0:
                 print(f"Epoch {i}, score: {self.score_history[-1]}")

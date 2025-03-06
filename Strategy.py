@@ -54,8 +54,8 @@ class Cp(Strategy):
 Cooperates on the first round and imitates its opponent's previous move thereafter.
 """
 class TFT(Strategy):
-    def act(self, state):
-        last = state[-1][1]
+    def act(self, state, ind = 0):
+        last = state[-1][ind]
         if last == 2:
             return COOPERATE
         else:
@@ -65,8 +65,8 @@ class TFT(Strategy):
 Defects on the first round and imitates its opponent's previous move thereafter.
 """
 class STFT(Strategy):
-    def act(self, state):
-        last = state[-1][1]
+    def act(self, state, ind = 0):
+        last = state[-1][ind]
         if last == 2:
             return DEFECT
         else:

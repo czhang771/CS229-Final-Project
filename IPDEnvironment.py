@@ -40,14 +40,15 @@ class IPDEnvironment:
             state = self.history[-self.k:]
             state = torch.tensor([item[:2] for item in state])
         
-        if actor == 1:
-            # recorded state should be THEIR ACTION, MY ACTION
+        if actor == 2:
+            # recorded state should be MY ACTION, THEIR ACTION
             state = torch.flip(state, dims = [1])
         
         return state
     
     # Executes next round and updates state
     def step(self, action1, action2):
+        # action1 is my action, action2 is opponent's action
         # game has ended
         if self.current_step >= self.num_rounds:
             return None

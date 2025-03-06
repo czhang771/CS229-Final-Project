@@ -10,11 +10,8 @@ from Trajectory import Trajectory
 from Train import Trainer
 from Optimizer import Optimizer
 
-# Configurable payoff matrix as a global variable
-# (Row player, Column player) for each outcome
-# Format: (R,R), (S,T), (T,S), (P,P) 
-# Where R=Reward for cooperation, S=Sucker's payoff, T=Temptation to defect, P=Punishment for mutual defection
-# Default values set to standard Prisoner's Dilemma matrix
+# should ALWAYS BE: MY ACTION, OPPONENT ACTION, MY REWARD, OPPONENT REWARD
+
 COOPERATE = 0
 DEFECT = 1
 ACTIONS = [COOPERATE, DEFECT]
@@ -32,15 +29,15 @@ class TestIPDEnvironment:
         state = env.reset()
         assert env.current_step == 0
         assert len(env.history) == 0
-        assert state.shape == (k, 2)  # Empty history at start
+        assert state.shape == (k, 2)  # empty history at start
     
     def test_step_first_move(self):
         k = 2   
         env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds = 2, k = k)
         env.reset()
-        next_state, reward, _ = env.step(0, 0)  # Both cooperate
+        next_state, reward, _ = env.step(0, 0)  # both cooperate
         
-        # Check history
+        # check history
         assert len(env.history) == 1
         assert env.history[0] == (0, 0, PAYOFF_MATRIX[COOPERATE, COOPERATE][0], PAYOFF_MATRIX[COOPERATE, COOPERATE][1])
         
@@ -192,9 +189,9 @@ class TestLearner:
         assert loss.requires_grad
 
 class TestTrajectory:
-    def test_add_and_get(self):
+    def test_add_from_history(self):
         history = []
-        # their action, my action, my reward, their reward
+        # my action, their action, my reward, their reward
         history.append((0, 0, PAYOFF_MATRIX[COOPERATE, COOPERATE][0], PAYOFF_MATRIX[COOPERATE, COOPERATE][1]))
         history.append((0, 1, PAYOFF_MATRIX[COOPERATE, DEFECT][0], PAYOFF_MATRIX[COOPERATE, DEFECT][1]))
         history.append((1, 0, PAYOFF_MATRIX[DEFECT, COOPERATE][0], PAYOFF_MATRIX[DEFECT, COOPERATE][1]))
@@ -206,29 +203,58 @@ class TestTrajectory:
         states = trajectory.get_states()
         assert len(states) == 4
         
-        assert np.array_equal(states[0], np.array([[0, 0],[2, 2]]))
-        assert np.array_equal(states[1], np.array([[0, 0],[0, 1]]))
-        assert np.array_equal(states[2], np.array([[0, 1],[1, 0]]))
-        assert np.array_equal(states[3], np.array([[1, 0],[1, 1]]))
+        # manual check of states
+        assert np.array_equal(states[0], np.array([[2, 2],[2, 2]]))
+        assert np.array_equal(states[1], np.array([[2, 2],[0, 0]]))
+        assert np.array_equal(states[2], np.array([[0, 0],[0, 1]]))
+        assert np.array_equal(states[3], np.array([[0, 1],[1, 0]]))
         
         # check actions
         actions = trajectory.get_actions()
         assert len(actions) == 4
         assert actions[0] == 0
-        assert actions[1] == 1
-        assert actions[2] == 0
+        assert actions[1] == 0
+        assert actions[2] == 1
         assert actions[3] == 1
+    
+    def test_add_from_env(self):
+        env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds = 10, k = 2)
+        env.reset()
+        env.step(0, 0)
+        env.step(1, 1)
+        env.step(0, 1)
+        env.step(0, 0)
+        env.step(1, 1)
+        env.step(1, 0)
+
+        trajectory = Trajectory(env.history, k = 3, my_payoff = env.payoff1, opponent_payoff = env.payoff2)
+        assert len(trajectory.rewards) == 6
+        assert len(trajectory.actions) == 6
+
+        # check states
+        states = trajectory.get_states()
+        assert len(states) == 6
+        assert np.array_equal(states[0], np.array([[2, 2],[2, 2], [2, 2]]))
+        assert np.array_equal(states[1], np.array([[2, 2], [2, 2], [0, 0]]))
+        assert np.array_equal(states[2], np.array([[2, 2],[0, 0],[1, 1]])) 
+        assert np.array_equal(states[3], np.array([[0, 0],[1, 1],[0, 1]]))
+        assert np.array_equal(states[4], np.array([[1, 1],[0, 1],[0, 0]]))
+        assert np.array_equal(states[5], np.array([[0, 1],[0, 0],[1, 1]]))
+
+        # check actions
+        actions = trajectory.get_actions()
+        assert len(actions) == 6
+        
     
     def test_discounted_rewards(self):
         env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds = 3, k = 3)
         env.reset()
         
-        # get values from payoff matrix
+        # get (player 1) values from payoff matrix
         coop_defect_reward = PAYOFF_MATRIX[COOPERATE, DEFECT][0]
         mutual_coop_reward = PAYOFF_MATRIX[COOPERATE, COOPERATE][0]
         temptation_reward = PAYOFF_MATRIX[DEFECT, COOPERATE][0]
         
-        # Add transitions with rewards from payoff matrix
         # my action, opponent action
         env.step(0, 1)
         env.step(0, 0)
@@ -237,8 +263,7 @@ class TestTrajectory:
         # create trajectory
         trajectory = Trajectory(env.history, k = 3, my_payoff = env.payoff1, opponent_payoff = env.payoff2)
 
-        # get discounted sums with gamma=0.5
-        # Expected: [r1 + 0.5*r2 + 0.25*r3, r2 + 0.5*r3, r3]
+        # sanity check discounted sums
         gamma = 0.5
         discounted = trajectory.get_reward_sums(gamma=gamma)
         
@@ -254,35 +279,32 @@ class TestTrajectory:
 class TestEndToEndFlow:
     def test_environment_to_model_flow(self):
         """Test the flow of data from environment to model"""
-        # Setup environment with known payoff matrix
         k = 10  # Memory size for state
         env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds = 10, k = k)
-        env.reset()
         
         # play a sequence of moves to generate history
         # both cooperate, then both defect, then mixed
-        env.step(0, 0)  # Both cooperate
-        env.step(1, 1)  # Both defect
-        env.step(0, 1)  # Agent cooperates, opponent defects
+        env.step(0, 0) 
+        env.step(1, 1)
+        env.step(0, 1)
         env.step(0, 0)
         env.step(1, 1)
         
-        # Get state from environment
+        # get state from environment
         state = env.get_state()
         
-        # Verify state format
+        # verify state format
         assert state.shape[0] == k  
         assert state.shape[1] == 2  
         
-        # Create model with input dimension matching flattened state
-        input_dim = state.shape[1] * k  # Each state has 2 values (agent and opponent actions)
-        model = LogReg(d_input=input_dim, d_output=2)  # 2 actions: cooperate or defect
+        input_dim = 2 * k  # each state has 2 values (agent and opponent actions)
+        model = LogReg(d_input=input_dim, d_output = 2)
         
-        # Test forward pass with state from environment
+        # test forward pass with state from environment
         logits = model(state)
         
-        # Verify output format
-        assert logits.shape == (1, 2)  # Should output logits for 2 actions
+        # verify output format
+        assert logits.shape == (1, 2)  # should output logits for 2 actions
 
         trajectory = Trajectory(env.history, k = k, my_payoff = env.payoff1, opponent_payoff = env.payoff2)
         states = trajectory.get_states()
@@ -295,21 +317,15 @@ class TestEndToEndFlow:
         expected = torch.tensor([logits[i, actions[i]] for i in range(len(actions.flatten()))])
         assert torch.isclose(action_log_probs.flatten(), expected).all()
         
-        # Verify states format
+        # verify states format
         assert isinstance(states, torch.Tensor)
-        assert states.shape[0] == 5  # 3 transitions
-        assert states.shape[2] == 2  # Each state has opponent and agent action
+        assert states.shape[0] == 5
+        assert states.shape[2] == 2
         
-        # Flatten each state for LogReg model
-        flattened_states = states.reshape(states.shape[0], -1)
+        # try batched forward pass
+        logits = model(states, batched=True)
         
-        # Create model
-        model = LogReg(d_input=flattened_states.shape[1], d_output=2)
-        
-        # Test forward pass with batch of states
-        logits = model(flattened_states, batched=True)
-        
-        # Verify output format
+        # verify output format
         assert logits.shape == (5, 2)  # Should output logits for each state and each action
 
 if __name__ == "__main__":

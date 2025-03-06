@@ -15,7 +15,7 @@ class Learner(ABC):
     def __init__(self, model: Model, device: torch.device, optimizer_name: Optimizer, terminal: bool = True, param_dict = {}):
         self.model = model
         self.device = device
-        self.terminal = True
+        self.terminal = terminal
         self.optimizer = Optimizer.create_optimizer(self.model, optimizer_name, param_dict)
     
     def act(self, state: torch.Tensor, epsilon: float = 0.0) -> int:
@@ -50,12 +50,15 @@ class PolicyGradientLearner(Learner):
             R_t = trajectory.get_reward_sums(gamma = gamma, terminal = self.terminal)
             all_Rt.append(R_t)
         
+        print(all_Rt)
+        
         # compute baseline as average of discounted rewards across all trajectories
         baseline = torch.cat(all_Rt).mean().detach()
         
         for i, trajectory in enumerate(taus):
             actions = trajectory.get_actions()
             states = trajectory.get_states()
+            print(states)
 
             # compute advantage
             R_t = all_Rt[i]

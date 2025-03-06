@@ -47,7 +47,7 @@ class Trainer:
                 action2 = opponent.act(state)
                 next_state, reward1, reward2 = self.env.step(action1, action2)
             
-            env.print_game_sequence()
+            # env.print_game_sequence()
             
             # just to be explicitly clear about order
             if AGENT == 1: 
@@ -86,7 +86,7 @@ class Trainer:
             # logging
             self.score_history.append(sum([t.my_payoff for t in trajectories]) / len(trajectories)) 
 
-            if i % 50 == 0:
+            if i % 1 == 0:
                 print(f"Epoch {i}, score: {self.score_history[-1]}")
 
     def save(self, path: str):
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     k = 3
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     env = IPDEnvironment(payoff_matrix = PAYOFF_MATRIX, num_rounds = 1000, k = k)
-    learner = PolicyGradientLearner(LogReg(d_input = 2 * k, d_output = 2), device, "adam")
-    opponent = Du()
+    learner = PolicyGradientLearner(LogReg(d_input = 2 * k, d_output = 2), device, "adam", terminal = False)
+    opponent = Random()
     trainer = Trainer(env, learner, opponent, k = k)
-    trainer.train(epochs = 100, num_games = 10, game_length = 10)
+    trainer.train(epochs = 10, num_games = 10, game_length = 5)

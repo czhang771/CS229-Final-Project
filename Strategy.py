@@ -70,7 +70,7 @@ class TFT(Strategy):
         if is_first:
             return COOPERATE
         else:
-            return move
+            return int(move)
 
 """
 Defects on the first round and imitates its opponent's previous move thereafter.
@@ -81,7 +81,7 @@ class STFT(Strategy):
         if is_first:
             return DEFECT
         else:
-            return move
+            return int(move)
  
 """
  Cooprates on the first round and after its opponent cooperates. Following a defection,it cooperates with probability 

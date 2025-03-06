@@ -109,6 +109,20 @@ class TestStrategies:
         assert 0 in actions
         assert 1 in actions
 
+class TestStrategy:
+    def test_TFT(self):
+        starter_state = torch.tensor([[2, 2], [2, 2]])
+        tft = TFT()
+        assert tft.act(starter_state) == 0 # cooperate immediately
+
+        # opponent cooperates
+        state = torch.tensor([[2, 2], [0, 0]])
+        assert tft.act(state) == 0
+        
+        # opponent defects
+        state = torch.tensor([[2, 2], [1, 1]])
+        assert tft.act(state) == 1
+
 
 class TestModel:
     def test_logreg_shape(self):
@@ -203,7 +217,7 @@ class TestTrajectory:
         states = trajectory.get_states()
         assert len(states) == 4
         
-        # manual check of states
+        # manual check of states, LEFT PADDING!!!!
         assert np.array_equal(states[0], np.array([[2, 2],[2, 2]]))
         assert np.array_equal(states[1], np.array([[2, 2],[0, 0]]))
         assert np.array_equal(states[2], np.array([[0, 0],[0, 1]]))

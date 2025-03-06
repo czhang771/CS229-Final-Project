@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from abc import ABC, abstractmethod
 from Trajectory import Trajectory
-from Optimizer import Optimizer
+import Optimizer
 from Model import Model
 
 # states should be tensor of shape (n, 2)
@@ -12,11 +12,11 @@ from Model import Model
 
 class Learner(ABC):
     """Base class for all reinforcement learning algorithms (including optimizer + model)"""
-    def __init__(self, model: Model, device: torch.device, optimizer: Optimizer, terminal: bool = True):
+    def __init__(self, model: Model, device: torch.device, optimizer_name: Optimizer, terminal: bool = True, param_dict = {}):
         self.model = model
         self.device = device
         self.terminal = True
-        self.optimizer = optimizer
+        self.optimizer = Optimizer.create_optimizer(self.model, optimizer_name, param_dict)
     
     def act(self, state: torch.Tensor, epsilon: float = 0.0) -> int:
         """Act on a state with epsilon-greedy policy; set 0 for greedy, 1 for completely random"""

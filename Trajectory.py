@@ -4,7 +4,7 @@ from collections import defaultdict
 
 class Trajectory:
     """Store trajectory of a single game and useful utility functions"""
-    def __init__(self, history, k, my_payoff, opponent_payoff):
+    def __init__(self, history: list[tuple[int, int, float, float]], k: int, my_payoff: float, opponent_payoff: float):
         # initialize trajectory from history of tuples (opponent_action, action, my_reward, opponent_reward)
         self.history = history
         self.k = k
@@ -24,7 +24,7 @@ class Trajectory:
             self.rewards = torch.tensor([])
             self.opponent_rewards = torch.tensor([])
         
-        # game length
+        # iterated game length
         self.length = len(history)
     
     def get_states(self) -> torch.Tensor:
@@ -49,24 +49,6 @@ class Trajectory:
                 state = history[-self.k:]
                 state = torch.tensor([item[:2] for item in state])
             padded_states[i, :, :] = state
-            
-        # for i in range(self.length):
-        #     # for each position i in the sequence
-            
-        #     # determine how many valid history items we have (can't exceed k)
-        #     valid_items = min(i + 1, self.k)
-            
-        #     for j in range(valid_items):
-        #         # j goes from 0 to valid_items-1
-        #         # we want to place the oldest history first (at position 0)
-        #         # and the newest history last (at position valid_items-1)
-                
-        #         # calculate the actual history index to use
-        #         history_idx = i - (valid_items - 1) + j
-                
-        #         # Fill in the action data
-        #         padded_states[i, j, 0] = self.actions[history_idx]
-        #         padded_states[i, j, 1] = self.opponent_actions[history_idx]
         
         return padded_states
     
@@ -91,7 +73,8 @@ class Trajectory:
             
         return dict(unique_states)
     
-    def get_reward_sums(self, gamma=0.99, terminal=False) -> torch.Tensor:
+    def get_reward_sums(self, gamma: float = 0.99, terminal: bool = False) -> torch.Tensor:
+        """Compute discounted rewards"""
         if self.length == 0:
             return torch.empty((0, 1))
         

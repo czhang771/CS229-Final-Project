@@ -18,9 +18,9 @@ class LogReg(Model):
     """Simple logistic regression baseline in the spirit of CS229"""
     def __init__(self, d_input: int, d_output: int):
         super().__init__()
-        self.weights = nn.Parameter(torch.randn(d_input, d_output))
-        nn.init.kaiming_normal_(self.weights)
-        self.bias = nn.Parameter(torch.zeros(d_output))
+        self.fc = nn.Linear(d_input, d_output)
+        nn.init.kaiming_normal_(self.fc.weight)
+        nn.init.zeros_(self.fc.bias)
 
     def forward(self, x: torch.Tensor, batched: bool = False) -> torch.Tensor:
         if batched:
@@ -30,9 +30,7 @@ class LogReg(Model):
         else:
             x = x.view(1, -1).float()
         
-        h = torch.matmul(x, self.weights) + self.bias
-        # return logits over outputs
-        return h
+        return self.fc(x)
 
 
 class MLP(Model):
@@ -91,19 +89,13 @@ class LSTMCell(nn.Module):
         self.b_i = nn.Parameter(torch.zeros(d_output))
         self.b_o = nn.Parameter(torch.zeros(d_output))
     
-    def forward(self, x: torch.Tensor, batched: bool = False) -> tuple:
+    def forward(self, x: torch.Tensor, batched: bool = False):
         """
-        Forward pass of LSTM Cell
-        
-        Args:
-            x: Input tensor of shape (T, D) or (B, T, D) if batched
-            batched: Whether input is batched
-            
-        Returns:
+        returns:
             tuple: (outputs, (h_n, c_n))
-                - outputs: tensor containing the output features from the last layer for each time step
-                - h_n: tensor containing the hidden state for the last time step
-                - c_n: tensor containing the cell state for the last time step
+            - outputs: tensor containing the output features from the last layer for each time step
+            - a_n: tensor containing the hidden state for the last time step
+            - c_n: tensor containing the cell state for the last time step
         """
         if batched:
             B, T, D = x.shape

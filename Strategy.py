@@ -5,6 +5,16 @@ from abc import ABC, abstractmethod
 COOPERATE = 0
 DEFECT = 1
 
+def is_first_round(state):
+    if state is None:
+        return True, None
+    
+    last = state[-1][0]
+    if last == 2:
+        return True, None
+    
+    return False, last
+
 class Strategy(ABC):
     """
     Abstract base class for all Iterated Prisoner's Dilemma strategies.
@@ -54,23 +64,24 @@ class Cp(Strategy):
 Cooperates on the first round and imitates its opponent's previous move thereafter.
 """
 class TFT(Strategy):
-    def act(self, state, ind = 0):
-        last = state[-1][ind]
-        if last == 2:
+    # states are stored [agent action, strategy action]
+    def act(self, state):
+        is_first, move = is_first_round(state)
+        if is_first:
             return COOPERATE
         else:
-            return last
+            return move
 
 """
 Defects on the first round and imitates its opponent's previous move thereafter.
 """
 class STFT(Strategy):
-    def act(self, state, ind = 0):
-        last = state[-1][ind]
-        if last == 2:
+    def act(self, state):
+        is_first, move = is_first_round(state)
+        if is_first:
             return DEFECT
         else:
-            return last
+            return move
  
 """
  Cooprates on the first round and after its opponent cooperates. Following a defection,it cooperates with probability 
@@ -84,10 +95,15 @@ class GTFT(Strategy):
         self.S = S
 
     def act(self, state):
-        if not state:
+        is_first, move = is_first_round(state)
+        if is_first:
             return COOPERATE
-        prob = min(1- (self.T-self.T)/(self.R-self.S), (self.R-self.P)/(self.T-self.P))
-        return COOPERATE if random.random() < prob else DEFECT
+        
+        if move == DEFECT:
+            prob = min(1- (self.T-self.R)/(self.R-self.S), (self.R-self.P)/(self.T-self.P))
+            return COOPERATE if random.random() < prob else DEFECT
+        else:
+            return COOPERATE
 
 """
 TFT with two differences: 
@@ -100,10 +116,9 @@ class GrdTFT(Strategy):
         self.apology_phase = 0  # Countdown for apology rounds
 
     def act(self, state):
-        if state is None:
+        is_first, move = is_first_round(state)
+        if is_first:
             return COOPERATE  
-
-        last_opponent_move = state[1]
 
         # Apology phase: Cooperate for two rounds after prolonged punishment
         if self.apology_phase > 0:
@@ -111,7 +126,7 @@ class GrdTFT(Strategy):
             return COOPERATE
 
         # If opponent defected, increase punishment length
-        if last_opponent_move == DEFECT:
+        if move == DEFECT:
             self.punishment_length += 1
             return DEFECT  # Continue defecting for the punishment period
 
@@ -122,7 +137,7 @@ class GrdTFT(Strategy):
             return COOPERATE
 
         # Default TFT behavior (mirror opponent)
-        return last_opponent_move
+        return move
 
 """ Imitates opponent's last move with high (but less than one) probability."""
 class ImpTFT(Strategy):
@@ -130,14 +145,14 @@ class ImpTFT(Strategy):
         self.p = p
     
     def act(self, state):
-        if not state:
+        is_first, move = is_first_round(state)
+        if is_first:
             return COOPERATE
-        last_opponent_move = state[1]
 
         if random.random() < self.p:
-            return last_opponent_move
+            return move
         else:
-            return COOPERATE if last_opponent_move == DEFECT else DEFECT
+            return COOPERATE if move == DEFECT else DEFECT
 
 """
 Cooperates unless defected against twice in a row.
@@ -147,14 +162,20 @@ class TFTT(Strategy):
         self.num_defected = 0
 
     def act(self, state):
-        if state and state[1] == DEFECT:
-            self.num_defected = 1
-            return DEFECT
-        
-        if self.num_defected == 0:
+        is_first, move = is_first_round(state)
+        if is_first:
             return COOPERATE
-        self.num_defected -= 1
-        return DEFECT
+
+        if move == DEFECT:
+            self.num_defected += 1
+            if self.num_defected > 2:
+                self.num_defected = 0 # is this correct?
+                return DEFECT
+            else:
+                return COOPERATE
+        else:
+            self.num_defected = 0
+            return COOPERATE
 
         
 """
@@ -165,11 +186,20 @@ class TTFT(Strategy):
         self.num_to_defect = 0
 
     def act(self, state):
-        if state and state[1] == DEFECT:
-            self.num_to_defect += 1
+        is_first, opp_move = is_first_round(state)
+        if is_first:
+            return COOPERATE
+        
+        # queue up defections
+        if opp_move == DEFECT:
+            self.num_to_defect = 2
+        
+        # if we have defections to make, do so and decrement counter
+        if self.num_to_defect > 0:
+            self.num_to_defect -= 1
             return DEFECT
-
-        return COOPERATE
+        else:
+            return COOPERATE
 
 """
 Cooperates until its opponent has defected once, and then defects for the rest of the game.
@@ -179,7 +209,11 @@ class GRIM(Strategy):
         self.defect = False
 
     def act(self, state):
-        if state[1] == DEFECT:
+        is_first, opp_move = is_first_round(state)
+        if is_first:
+            return COOPERATE
+        
+        if opp_move == DEFECT:
             self.defect = True
         
         return DEFECT if self.defect else COOPERATE
@@ -189,17 +223,17 @@ Cooperates if it and its opponent moved alike in previous move and defects if th
 """
 class WSLS(Strategy):
     def act(self, state):
-        if not state:
+        is_first, move1 = is_first_round(state)
+        if is_first:
             return COOPERATE
         
-        return COOPERATE if state[0] == state[1] else DEFECT
+        move2 = state[-1][1]
+        
+        return COOPERATE if move1 == move2 else DEFECT
 
 """
 Strong (gold, highly adaptable) opponent, implementation to be figured out
 """
 class Strong(Strategy):
     def act(self, state):
-        if not state:
-            return COOPERATE
-        
-        return COOPERATE if state[0] == state[1] else DEFECT
+        return COOPERATE

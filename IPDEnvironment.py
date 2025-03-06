@@ -28,6 +28,8 @@ class IPDEnvironment:
     def reset(self, actor = 1):
         self.history = []
         self.current_step = 0
+        self.payoff1 = 0
+        self.payoff2 = 0
         return self.get_state(actor = actor)
     
     # Returns the most recent state (previous moves) for agents

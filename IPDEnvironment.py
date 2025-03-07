@@ -46,7 +46,7 @@ class IPDEnvironment:
             # recorded state should be MY ACTION, THEIR ACTION
             state = torch.flip(state, dims = [1])
         
-        return state
+        return state.float()
     
     # Executes next round and updates state
     def step(self, action1, action2):

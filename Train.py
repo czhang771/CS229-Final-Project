@@ -43,7 +43,8 @@ class Trainer:
             # inner game loop; agents do not know game length
             for _ in range(game_length):
                 state = self.env.get_state(actor = AGENT)
-                action1 = self.learner.act(state)
+                # act with full sampling
+                action1 = self.learner.act(state, epsilon = 1.0)
                 action2 = opponent.act(state)
                 next_state, reward1, reward2 = self.env.step(action1, action2)
             
@@ -53,7 +54,8 @@ class Trainer:
             if AGENT == 1: 
                 trajectories.append(Trajectory(self.env.history, self.k, self.env.payoff1, self.env.payoff2))
             else: trajectories.append(Trajectory(self.env.history, self.k, self.env.payoff2, self.env.payoff1))
-        
+
+            # print(self.env.history)
         return trajectories
 
     def evaluate(self, game_length: int, num_games: int, eval_opponent: Strategy = None):
@@ -102,10 +104,11 @@ class Trainer:
     
 
 if __name__ == "__main__":
-    k = 3
+    k = 10
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     env = IPDEnvironment(payoff_matrix = PAYOFF_MATRIX, num_rounds = 1000, k = k)
-    learner = PolicyGradientLearner(LogReg(d_input = 2 * k, d_output = 2), device, "adam", terminal = False)
-    opponent = Random()
+    learner = PolicyGradientLearner(LogReg(d_input = 2 * k, d_output = 2), device, "adam", terminal = False, param_dict = {"lr": 0.1})
+    # learner = PolicyGradientLearner(MLP(d_input = 2 * k, d_output = 2, d_hidden = [4 * k, 4 * k]), device, "adamw", terminal = False, param_dict = {"lr": 0.1})
+    opponent = Cu()
     trainer = Trainer(env, learner, opponent, k = k)
-    trainer.train(epochs = 10, num_games = 10, game_length = 5)
+    trainer.train(epochs = 10, num_games = 10, game_length = 100)

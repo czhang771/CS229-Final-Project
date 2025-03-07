@@ -38,8 +38,8 @@ class Learner(ABC):
 
 class PolicyGradientLearner(Learner):
     """Basic REINFORCE policy gradient learner with cross-trajectory baseline"""
-    def __init__(self, model: Model, device: torch.device, optimizer: Optimizer, terminal: bool = True):
-        super().__init__(model, device, optimizer, terminal)
+    def __init__(self, model: Model, device: torch.device, optimizer_name: str, terminal: bool = True, param_dict = {}):
+        super().__init__(model, device, optimizer_name, terminal, param_dict)
 
     def loss(self, taus: list[Trajectory], gamma: float) -> torch.Tensor:
         # taus = list of trajectories
@@ -50,7 +50,7 @@ class PolicyGradientLearner(Learner):
             R_t = trajectory.get_reward_sums(gamma = gamma, terminal = self.terminal)
             all_Rt.append(R_t)
         
-        print(all_Rt)
+        # print(all_Rt)
         
         # compute baseline as average of discounted rewards across all trajectories
         baseline = torch.cat(all_Rt).mean().detach()
@@ -58,7 +58,6 @@ class PolicyGradientLearner(Learner):
         for i, trajectory in enumerate(taus):
             actions = trajectory.get_actions()
             states = trajectory.get_states()
-            print(states)
 
             # compute advantage
             R_t = all_Rt[i]
@@ -72,6 +71,7 @@ class PolicyGradientLearner(Learner):
             # compute policy 'loss' (multiply by -1 to do EV maximization)
             policy_loss = -1 * torch.sum(action_log_probs * A_t)
             losses.append(policy_loss)
+            # print(policy_loss)
         
         return torch.stack(losses).mean()
 

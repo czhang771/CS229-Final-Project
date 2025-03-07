@@ -50,7 +50,7 @@ class Trajectory:
                 state = torch.tensor([item[:2] for item in state])
             padded_states[i, :, :] = state
         
-        return padded_states
+        return padded_states.float()
     
     def get_actions(self) -> torch.Tensor:
         # return n x 1 tensor of actions taken by model

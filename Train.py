@@ -29,6 +29,7 @@ class Trainer:
         self.n_opponents = len(opponent) if isinstance(opponent, list) else 1
         self.k = k
         self.score_history = []
+        self.loss_history = []
         self.gamma = gamma
 
     def rollout(self, game_length: int, num_games: int):
@@ -93,9 +94,9 @@ class Trainer:
 
             # logging
             self.score_history.append(sum([t.my_payoff for t in trajectories]) / len(trajectories)) 
-
+            self.loss_history.append(loss.item())
             if i % 1 == 0:
-                print(f"Epoch {i}, score: {self.score_history[-1]}")
+                print(f"Epoch {i}, score: {self.score_history[-1]}, loss: {self.loss_history[-1]}")
 
     def train_AC(self, epochs: int, game_length: int, num_games: int):
         """Train using actor-critic"""
@@ -103,7 +104,7 @@ class Trainer:
             self.train_batch_step(game_length, num_games)
 
             if i % 1 == 0:
-                print(f"Epoch {i}, score: {self.score_history[-1]}")
+                print(f"Epoch {i}, score: {self.score_history[-1]}, actor loss: {self.loss_history[-1][0]}, critic loss: {self.loss_history[-1][1]}")
 
     def train_batch_step(self, game_length: int, num_games: int):
         # (inefficient) parallel environments
@@ -133,14 +134,14 @@ class Trainer:
             
             # compute update for actor
             self.learner.actor_optimizer.zero_grad()
-            loss = self.learner.actor_loss(states, actions)
-            loss.backward()
+            actor_loss = self.learner.actor_loss(states, actions)
+            actor_loss.backward()
             self.learner.actor_optimizer.step()
 
             # compute update for critic
             self.learner.critic_optimizer.zero_grad()
-            loss = self.learner.critic_loss(states, actions, rewards, next_states, next_actions, gamma = self.gamma)
-            loss.backward()
+            critic_loss = self.learner.critic_loss(states, actions, rewards, next_states, next_actions, gamma = self.gamma)
+            critic_loss.backward()
             self.learner.critic_optimizer.step()
             
             # update states and actions
@@ -152,6 +153,7 @@ class Trainer:
         for i in range(num_games):
             trajectories.append(Trajectory(envs[i].history, self.k, envs[i].payoff1, envs[i].payoff2))
         self.score_history.append(sum([t.my_payoff for t in trajectories]) / len(trajectories))
+        self.loss_history.append((actor_loss.item(), critic_loss.item()))
 
     def load(self, path: str):
         self.learner.model.load_state_dict(torch.load(path))
@@ -163,20 +165,29 @@ class Trainer:
     
 
 if __name__ == "__main__":
+    # non terminal reward basically doesn't work!
     k = 10
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     env = IPDEnvironment(payoff_matrix = PAYOFF_MATRIX, num_rounds = 1000, k = k)
-    opponent = Cu()
-    # non terminal reward basically doesn't work!
-    # learner = PolicyGradientLearner(LogReg(d_input = 2 * k, d_output = 2), device, "adam", terminal = False, param_dict = {"lr": 0.05})
-    # learner = PolicyGradientLearner(MLP(d_input = 2 * k, d_output = 2, d_hidden = [4 * k, 4 * k]), device, "adamw", terminal = False, param_dict = {"lr": 0.01})
-    # learner = PolicyGradientLearner(LSTM(d_input = 2, d_output = 2, d_hidden = [8, 4]), device, "adamw", terminal = True, param_dict = {"lr": 0.01})
+    opponent = TFT() 
+    
+    # POLICY GRADIENTS EXAMPLES
+    # learner = PolicyGradientLearner(LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS), device, "adam", terminal = False, param_dict = {"lr": 0.05})
+    # learner = PolicyGradientLearner(MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k]), device, "adamw", terminal = False, param_dict = {"lr": 0.01})
+    # learner = PolicyGradientLearner(LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [8 * STATE_DIM, 4 * STATE_DIM]), device, "adamw", terminal = True, param_dict = {"lr": 0.01})
     # trainer = Trainer(env, learner, opponent, k = k)
     # trainer.train_MC(epochs = 40, num_games = 10, game_length = 20)
 
-    actor = LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS)
-    critic = LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS)
-    learner = ActorCriticLearner(actor, critic, device, actor_optimizer = "adamw", critic_optimizer = "adamw", terminal = False, param_dict = {"actor": {"lr": 0.01}, "critic": {"lr": 0.01} })
-    trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99)
-    trainer.train_AC(epochs = 40, game_length = 20, num_games = 10)
+    # ACTOR-CRITIC EXAMPLES
+    # actor = LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS)
+    # critic = LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS)
+    actor = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k])
+    critic = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k])
+    # actor = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
+    # critic = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
     
+    learner = ActorCriticLearner(actor, critic, device, actor_optimizer = "adamw", critic_optimizer = "adamw", terminal = False, param_dict = {"actor": {"lr": 0.001}, "critic": {"lr": 0.001} })
+    trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99)
+    trainer.train_AC(epochs = 40, game_length = 20, num_games = 5)
+    plt.plot(trainer.score_history)
+    plt.show()

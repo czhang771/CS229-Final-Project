@@ -188,6 +188,10 @@ if __name__ == "__main__":
     
     learner = ActorCriticLearner(actor, critic, device, actor_optimizer = "adamw", critic_optimizer = "adamw", terminal = False, param_dict = {"actor": {"lr": 0.001}, "critic": {"lr": 0.001} })
     trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99)
-    trainer.train_AC(epochs = 40, game_length = 20, num_games = 5)
-    plt.plot(trainer.score_history)
+    trainer.train_AC(epochs = 40, game_length = 50, num_games = 5)
+
+    fig, ax = plt.subplots(3,1)
+    ax[0].plot(trainer.score_history)
+    ax[1].plot([x[0] for x in trainer.loss_history])
+    ax[2].plot([x[1] for x in trainer.loss_history])
     plt.show()

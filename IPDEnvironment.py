@@ -69,3 +69,11 @@ class IPDEnvironment:
         print("Game History:")
         for step, (a1, a2, r1, r2) in enumerate(self.history):
             print(f"Round {step+1}: P1 -> {a1}, P2 -> {a2} | Rewards: {r1}, {r2}")
+    
+    def copy(self):
+        new_env = IPDEnvironment(payoff_matrix = self.payoff_matrix, num_rounds = self.num_rounds, k = self.k)
+        new_env.history = self.history.copy()
+        new_env.payoff1 = self.payoff1
+        new_env.payoff2 = self.payoff2
+        new_env.current_step = self.current_step
+        return new_env

@@ -30,11 +30,6 @@ class Learner(ABC):
         
         return int(action)
 
-    @abstractmethod
-    # using torch loss functions to do updates, rather than directly computing gradients
-    def loss(self):
-        pass
-
 
 class PolicyGradientLearner(Learner):
     """Basic REINFORCE policy gradient learner with cross-trajectory baseline"""
@@ -77,21 +72,50 @@ class PolicyGradientLearner(Learner):
 
 
 class ActorCriticLearner(Learner):
-    def __init__(self, model, device):
-        super().__init__(model, device)
+    def __init__(self, actor_model: Model, critic_model: Model, device: torch.device, actor_optimizer: str, critic_optimizer: str, terminal: bool = True, param_dict = {}):
+        self.actor_model = actor_model
+        self.critic_model = critic_model
+        
+        self.actor_optimizer = Optimizer.create_optimizer(self.actor_model, actor_optimizer, param_dict["actor"])
+        self.critic_optimizer = Optimizer.create_optimizer(self.critic_model, critic_optimizer, param_dict["critic"])
+        
+        self.terminal = terminal
+        self.device = device
+    
+    @property
+    def model(self):
+        return self.actor_model
 
-    def act(self, state):
-        pass
+    def actor_loss(self, states, actions):
+        B = states.shape[0]
+        actions = actions.view(B, 1)
+        logits = self.actor_model(states, batched = True)
+        log_probs = torch.log_softmax(logits, dim = 1)
+        action_log_probs = torch.gather(log_probs, dim = 1, index = actions)
+
+        # make sure Q values are not affecting gradient
+        Q_values = self.critic_model(states, batched = True).detach()
+        Q_values = torch.gather(Q_values, dim = 1, index = actions)
+        
+        actor_loss = -1 * torch.mean(action_log_probs * Q_values)
+        return actor_loss
+
+    def critic_loss(self, states, actions, rewards, next_states, next_actions, gamma):
+        B = states.shape[0]
+        actions = actions.view(B, 1)
+        next_actions = next_actions.view(B, 1)
+        Q_prev = self.critic_model(states, batched = True)
+        Q_prev_values = torch.gather(Q_prev, dim = 1, index = actions)
+        Q_next = self.critic_model(next_states, batched = True)
+        Q_next_values = torch.gather(Q_next, dim = 1, index = next_actions)
+        
+        delta_t = rewards + gamma * Q_next_values - Q_prev_values
+        
+        # critic_loss = -1 * torch.mean(delta_t * Q_prev_values) also works but then must detach delta_t
+        critic_loss = torch.mean(torch.pow(delta_t, 2))
+        return critic_loss
 
 class PPOLearner(Learner):
-    def __init__(self, model, device):
-        super().__init__(model, device)
-
-    def act(self, state):
-        pass
-
-
-class GRPOLearner(Learner):
     def __init__(self, model, device):
         super().__init__(model, device)
 

@@ -5,7 +5,7 @@ import torch
 from IPDEnvironment import IPDEnvironment
 from Strategy import Strategy, TFT, Cu, Du, Random
 from Model import LogReg, MLP, LSTM
-from Learner import PolicyGradientLearner
+from Learner import PolicyGradientLearner, ActorCriticLearner
 from Trajectory import Trajectory
 from Train import Trainer
 from Optimizer import Optimizer
@@ -169,12 +169,16 @@ class TestLearner:
     def test_policy_gradient_act(self):
         # Create a deterministic model for testing
         class DeterministicModel(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.weights = torch.nn.Parameter(torch.tensor([[100.0, 0.0]]))
+
             def forward(self, x, batched=False):
                 # Always return logits that favor cooperation
-                return torch.tensor([[100.0, 0.0]])
+                return self.weights
         
         model = DeterministicModel()
-        learner = PolicyGradientLearner(model, device = "cpu", optimizer = None, terminal = False)
+        learner = PolicyGradientLearner(model, device = "cpu", optimizer_name = "adamw", terminal = False, param_dict = {"lr": 0.01})
         
         # Test greedy action
         state = torch.tensor([[0, 1],[1, 0]])
@@ -188,7 +192,7 @@ class TestLearner:
     def test_policy_gradient_loss(self):
         k = 4
         model = LogReg(d_input = k * 2, d_output = 2)
-        learner = PolicyGradientLearner(model, device = "cpu", optimizer = None, terminal = False)
+        learner = PolicyGradientLearner(model, device = "cpu", optimizer_name = "adamw", terminal = False, param_dict = {"lr": 0.01})
         
         # Create simple trajectory
         env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds = 10, k = k)
@@ -202,6 +206,53 @@ class TestLearner:
         assert isinstance(loss, torch.Tensor)
         assert loss.requires_grad
 
+    def test_actor_critic_loss(self):
+        k = 4
+        actor = LogReg(d_input = k * 2, d_output = 2)
+        critic = LogReg(d_input = k * 2, d_output = 2)  # Note: critic should output one value per action
+        learner = ActorCriticLearner(actor, critic, device = "cpu", actor_optimizer = "adamw", 
+                                    critic_optimizer = "adamw", terminal = False, 
+                                    param_dict = {"actor": {"lr": 0.01}, "critic": {"lr": 0.01}})
+        
+        # Create simple trajectory
+        env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds = 10, k = k)
+        env.reset()
+        state = env.get_state()
+        action1 = learner.act(state, epsilon = 1)
+        action2 = learner.act(state, epsilon = 1)
+        next_state, reward1, reward2 = env.step(action1, action2)
+        
+        # convert to correct tensor shapes
+        # states are expected in batch form with shape [batch_size, k, 2]
+        state_tensor = state.unsqueeze(0)  # Add batch dimension
+        
+        # actions are expected as a tensor with shape [batch_size, 1]
+        action_tensor = torch.tensor([[action1]])
+        
+        # rewards need to be tensors with shape [batch_size, 1]
+        reward_tensor = torch.tensor([[reward1]])
+        
+        next_state_tensor = next_state.unsqueeze(0)
+        next_action = learner.act(next_state, epsilon = 1)
+        next_action_tensor = torch.tensor([[next_action]])
+        
+        # Test actor loss calculation works
+        actor_loss = learner.actor_loss(state_tensor, action_tensor)
+        assert isinstance(actor_loss, torch.Tensor)
+        assert actor_loss.requires_grad
+        
+        # Test critic loss calculation works
+        critic_loss = learner.critic_loss(
+            state_tensor, 
+            action_tensor, 
+            reward_tensor, 
+            next_state_tensor, 
+            next_action_tensor, 
+            gamma=0.99
+        )
+        assert isinstance(critic_loss, torch.Tensor)
+        assert critic_loss.requires_grad
+        
 class TestTrajectory:
     def test_add_from_history(self):
         history = []

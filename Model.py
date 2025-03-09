@@ -58,7 +58,7 @@ class MLP(Model):
             x = x.view(B, -1)
         else:
             x = x.view(1, -1)
-
+        
         h = torch.matmul(x, self.weights[0]) + self.biases[0]
         h = torch.relu(h)
         
@@ -107,13 +107,12 @@ class LSTMCell(nn.Module):
             c_t = torch.zeros(1, self.d_output, device=x.device)
             a_t = torch.zeros(1, self.d_output, device=x.device)
             outputs = torch.zeros(T, self.d_output, device=x.device)
-
+        
         for i in range(T):
             if batched:
                 x_t = x[:, i, :]
             else:
-                x_t = x[i, :]
-
+                x_t = x[i, :].unsqueeze(0)
             concat = torch.cat([x_t, a_t], dim=1)
             f_t = torch.sigmoid(torch.matmul(concat, self.W_f) + self.b_f)
             i_t = torch.sigmoid(torch.matmul(concat, self.W_i) + self.b_i)

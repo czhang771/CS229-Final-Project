@@ -26,6 +26,9 @@ class Strategy(ABC):
         """
         pass
 
+    def reset(self):
+        pass
+
 """
 Cooperates unconditionally.
 
@@ -139,6 +142,10 @@ class GrdTFT(Strategy):
         # Default TFT behavior (mirror opponent)
         return move
 
+    def reset(self):
+        self.punishment_length = 0
+        self.apology_phase = 0
+
 """ Imitates opponent's last move with high (but less than one) probability."""
 class ImpTFT(Strategy):
     def __init__(self, p):
@@ -176,6 +183,9 @@ class TFTT(Strategy):
         else:
             self.num_defected = 0
             return COOPERATE
+        
+    def reset(self):
+        self.num_defected = 0
 
         
 """
@@ -200,6 +210,9 @@ class TTFT(Strategy):
             return DEFECT
         else:
             return COOPERATE
+    
+    def reset(self):
+        self.num_to_defect = 0
 
 """
 Cooperates until its opponent has defected once, and then defects for the rest of the game.
@@ -217,6 +230,9 @@ class GRIM(Strategy):
             self.defect = True
         
         return DEFECT if self.defect else COOPERATE
+    
+    def reset(self):
+        self.defect = False
 
 """
 Cooperates if it and its opponent moved alike in previous move and defects if they moved differently.

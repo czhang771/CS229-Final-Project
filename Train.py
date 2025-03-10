@@ -55,7 +55,7 @@ class Trainer:
                 action2 = opponent.act(state)
                 next_state, reward1, reward2 = self.env.step(action1, action2)
             
-            # env.print_game_sequence()
+            # self.env.print_game_sequence()
             
             # just to be explicitly clear about order
             if AGENT == 1: 
@@ -146,7 +146,7 @@ class Trainer:
                     next_state, reward1, reward2 = envs[i].step(int(actions[i]), int(action2))
                     rewards[i] = reward1
                     next_states[i, :, :] = next_state
-                    next_actions[i] = self.learner.act(next_states[i], epsilon = 0.0) # greedy for target ?
+                    next_actions[i] = self.learner.act(next_states[i], epsilon = 0.0) # greedy for target value
                 
                 all_states.append(states)
                 all_actions.append(actions)
@@ -163,13 +163,7 @@ class Trainer:
             batch_rewards = torch.cat(all_rewards, dim = 0)
             batch_next_states = torch.cat(all_next_states, dim = 0)
             batch_next_actions = torch.cat(all_next_actions, dim = 0)
-        
-            # update actor model
-            self.learner.actor_optimizer.zero_grad()
-            actor_loss = self.learner.actor_loss(batch_states, batch_actions)
-            torch.nn.utils.clip_grad_norm_(self.learner.actor_model.parameters(), max_norm = 1.0)
-            actor_loss.backward()
-            self.learner.actor_optimizer.step()
+
 
             # update critic model
             self.learner.critic_optimizer.zero_grad()
@@ -177,6 +171,16 @@ class Trainer:
             torch.nn.utils.clip_grad_norm_(self.learner.critic_model.parameters(), max_norm = 1.0)
             critic_loss.backward()
             self.learner.critic_optimizer.step()
+
+
+            # update actor model
+            self.learner.actor_optimizer.zero_grad()
+            actor_loss = self.learner.actor_loss(batch_states, batch_actions)
+            torch.nn.utils.clip_grad_norm_(self.learner.actor_model.parameters(), max_norm = 1.0)
+            actor_loss.backward()
+            self.learner.actor_optimizer.step()
+
+        envs[0].print_game_sequence()
 
         # logging
         trajectories = []
@@ -198,7 +202,7 @@ class Trainer:
 
 if __name__ == "__main__":
     # non terminal reward basically doesn't work!
-    k = 10
+    k = 5
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     env = IPDEnvironment(payoff_matrix = PAYOFF_MATRIX, num_rounds = 1000, k = k)
     opponent = TFT() 
@@ -215,12 +219,16 @@ if __name__ == "__main__":
     # actor = LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS)
     # critic = LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS)
     # actor = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k])
-    critic = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k])
+    # critic = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k])
     actor = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
-    # critic = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
+    critic = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
 
     # IT REALLY WORKS A LOT BETTER IF THE THE CRITIC IS AN LSTM
     # THE HYPERPARAMETER TUNING IS REALLY ANNOYING
+
+    # TODO:
+    # make LSTM only use actual history (not padding)
+    # figure out a better way than padding?
 
     learner = ActorCriticLearner(actor, critic, device, 
                                  actor_optimizer = "adamw", 

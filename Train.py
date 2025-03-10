@@ -1,8 +1,8 @@
 import torch
 import numpy as np
 from IPDEnvironment import IPDEnvironment
-from Model import LogReg, MLP, LSTM
-from Learner import PolicyGradientLearner, ActorCriticLearner, PPOLearner
+from Model import LogReg, MLP, LSTM, init_weights
+from Learner import PolicyGradientLearner, ActorCriticLearner
 from Strategy import *
 from Trajectory import Trajectory
 import matplotlib.pyplot as plt
@@ -32,7 +32,7 @@ class Trainer:
         self.loss_history = []
         self.gamma = gamma
 
-    def rollout(self, game_length: int, num_games: int):
+    def rollout(self, game_length: int, num_games: int, epsilon_t: float = 1.0):
         """Play num_games of length game_length against opponent (randomly selected), return trajectories"""
         
         trajectories = []
@@ -51,7 +51,7 @@ class Trainer:
                 state = self.env.get_state(actor = AGENT)
                 # act with full sampling
                 # assume simultaneous actions
-                action1 = self.learner.act(state, epsilon = 1.0)
+                action1 = self.learner.act(state, epsilon = epsilon_t)
                 action2 = opponent.act(state)
                 next_state, reward1, reward2 = self.env.step(action1, action2)
             
@@ -76,15 +76,17 @@ class Trainer:
         # reset if necessary
         if eval_opponent: self.opponent = original_opponent
         
-        return sum([t.my_payoff for t in trajectories]) / num_games
-    
+        score = sum([t.my_payoff for t in trajectories]) / num_games
+        print(f"Score: {score}")
+        return score
     
     def train_MC(self, epochs: int, game_length: int, num_games: int):
         """Basic implementation of a train loop"""
         
         for i in range(epochs):
             # do rollouts
-            trajectories = self.rollout(game_length, num_games)
+            epsilon_t = min(0.1, 1.0 - i / epochs)
+            trajectories = self.rollout(game_length, num_games, epsilon_t = epsilon_t)
             
             # update step
             self.learner.optimizer.zero_grad()
@@ -98,62 +100,92 @@ class Trainer:
             if i % 1 == 0:
                 print(f"Epoch {i}, score: {self.score_history[-1]}, loss: {self.loss_history[-1]}")
 
-    def train_AC(self, epochs: int, game_length: int, num_games: int):
+    def train_AC(self, epochs: int, game_length: int, num_games: int, batch_size: int = 5):
         """Train using actor-critic"""
+
         for i in range(epochs):
-            self.train_batch_step(game_length, num_games)
+            epsilon_t = min(0.1, 1.0 - i / epochs)
+            if batch_size > game_length:
+                raise ValueError("Batch size must be less than game length")
+            
+            self.train_AC_batch(game_length, num_games, batch_size, epsilon_t)
+            self.learner.actor_optimizer.scheduler_step()
+            self.learner.critic_optimizer.scheduler_step()
 
             if i % 1 == 0:
                 print(f"Epoch {i}, score: {self.score_history[-1]}, actor loss: {self.loss_history[-1][0]}, critic loss: {self.loss_history[-1][1]}")
 
-    def train_batch_step(self, game_length: int, num_games: int):
+    def train_AC_batch(self, game_length: int, num_games: int, batch_size: int, epsilon_t = 1.0):
         # (inefficient) parallel environments
         envs = [self.env.copy() for _ in range(num_games)]
-
         states = torch.zeros(num_games, self.k, 2)
-        actions = torch.zeros(num_games, dtype = torch.long)
-        rewards = torch.zeros(num_games)
-        next_states = torch.zeros(num_games, self.k, 2)
-        next_actions = torch.zeros(num_games, dtype = torch.long)
 
         # initialize first values
         for i in range(num_games):
             states[i, :, :] = envs[i].get_state(actor = AGENT)
-            actions[i] = self.learner.act(states[i], epsilon = 1.0)
         
-        for _ in range(game_length):
-            for i in range(num_games):
-                # sampling loop
-                action2 = self.opponent.act(states[i])
-                next_state, reward1, reward2 = envs[i].step(int(actions[i]), int(action2))
-                rewards[i] = reward1
-                next_states[i, :, :] = next_state
+        # initialize losses
+        for _ in range(game_length // batch_size):
+            all_states = []
+            all_actions = []
+            all_rewards = []
+            all_next_states = []
+            all_next_actions = []
 
-                next_action = self.learner.act(next_states[i], epsilon = 1.0)
-                next_actions[i] = next_action
-            
-            # compute update for actor
+            # loop through batch of timesteps
+            for j in range(batch_size):
+                actions = torch.zeros(num_games, dtype = torch.long)
+                rewards = torch.zeros(num_games)
+                next_states = torch.zeros(num_games, self.k, 2)
+                next_actions = torch.zeros(num_games, dtype = torch.long)
+                
+                for i in range(num_games):
+                    # sampling loop
+                    actions[i] = self.learner.act(states[i], epsilon = epsilon_t)
+                    action2 = self.opponent.act(states[i])
+                    next_state, reward1, reward2 = envs[i].step(int(actions[i]), int(action2))
+                    rewards[i] = reward1
+                    next_states[i, :, :] = next_state
+                    next_actions[i] = self.learner.act(next_states[i], epsilon = 0.0) # greedy for target ?
+                
+                all_states.append(states)
+                all_actions.append(actions)
+                all_rewards.append(rewards)
+                all_next_states.append(next_states)
+                all_next_actions.append(next_actions)
+
+                # update states
+                states = next_states
+
+            # stack data
+            batch_states = torch.cat(all_states, dim = 0)
+            batch_actions = torch.cat(all_actions, dim = 0)
+            batch_rewards = torch.cat(all_rewards, dim = 0)
+            batch_next_states = torch.cat(all_next_states, dim = 0)
+            batch_next_actions = torch.cat(all_next_actions, dim = 0)
+        
+            # update actor model
             self.learner.actor_optimizer.zero_grad()
-            actor_loss = self.learner.actor_loss(states, actions)
+            actor_loss = self.learner.actor_loss(batch_states, batch_actions)
+            torch.nn.utils.clip_grad_norm_(self.learner.actor_model.parameters(), max_norm = 1.0)
             actor_loss.backward()
             self.learner.actor_optimizer.step()
 
-            # compute update for critic
+            # update critic model
             self.learner.critic_optimizer.zero_grad()
-            critic_loss = self.learner.critic_loss(states, actions, rewards, next_states, next_actions, gamma = self.gamma)
+            critic_loss = self.learner.critic_loss(batch_states, batch_actions, batch_rewards, batch_next_states, batch_next_actions, gamma = self.gamma)
+            torch.nn.utils.clip_grad_norm_(self.learner.critic_model.parameters(), max_norm = 1.0)
             critic_loss.backward()
             self.learner.critic_optimizer.step()
-            
-            # update states and actions
-            states = next_states
-            actions = next_actions
-        
+
         # logging
         trajectories = []
         for i in range(num_games):
             trajectories.append(Trajectory(envs[i].history, self.k, envs[i].payoff1, envs[i].payoff2))
         self.score_history.append(sum([t.my_payoff for t in trajectories]) / len(trajectories))
         self.loss_history.append((actor_loss.item(), critic_loss.item()))
+
+        return trajectories
 
     def load(self, path: str):
         self.learner.model.load_state_dict(torch.load(path))
@@ -173,24 +205,33 @@ if __name__ == "__main__":
     
     # POLICY GRADIENTS EXAMPLES
     # learner = PolicyGradientLearner(LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS), device, "adam", terminal = False, param_dict = {"lr": 0.05})
-    # learner = PolicyGradientLearner(MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k]), device, "adamw", terminal = False, param_dict = {"lr": 0.01})
+    learner = PolicyGradientLearner(MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k]), device, "adamw", terminal = False, param_dict = {"lr": 0.01})
     # learner = PolicyGradientLearner(LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [8 * STATE_DIM, 4 * STATE_DIM]), device, "adamw", terminal = True, param_dict = {"lr": 0.01})
-    # trainer = Trainer(env, learner, opponent, k = k)
+    trainer = Trainer(env, learner, opponent, k = k)
     # trainer.train_MC(epochs = 40, num_games = 10, game_length = 20)
+    # trainer.evaluate(game_length = 20, num_games = 10, eval_opponent = Du())
 
     # ACTOR-CRITIC EXAMPLES
     # actor = LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS)
     # critic = LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS)
-    actor = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k])
+    # actor = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k])
     critic = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k])
-    # actor = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
+    actor = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
     # critic = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
-    
-    learner = ActorCriticLearner(actor, critic, device, actor_optimizer = "adamw", critic_optimizer = "adamw", terminal = False, param_dict = {"actor": {"lr": 0.001}, "critic": {"lr": 0.001} })
-    trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99)
-    trainer.train_AC(epochs = 40, game_length = 50, num_games = 5)
 
-    fig, ax = plt.subplots(3,1)
+    # IT REALLY WORKS A LOT BETTER IF THE THE CRITIC IS AN LSTM
+    # THE HYPERPARAMETER TUNING IS REALLY ANNOYING
+
+    learner = ActorCriticLearner(actor, critic, device, 
+                                 actor_optimizer = "adamw", 
+                                 critic_optimizer = "adamw", 
+                                 terminal = False, 
+                                 param_dict = {"actor": {"lr": 0.005, "scheduler_type":"exponential", "scheduler_params": {"gamma": 0.99}},
+                                                "critic": {"lr": 0.001, "scheduler_type":"exponential", "scheduler_params": {"gamma": 0.99}} })
+    trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99)
+    trainer.train_AC(epochs = 100, game_length = 20, num_games = 5, batch_size = 10)
+    # "scheduler_type": "exponential", "scheduler_params": {"gamma": 0.99}
+    fig, ax = plt.subplots(3, 1)
     ax[0].plot(trainer.score_history)
     ax[1].plot([x[0] for x in trainer.loss_history])
     ax[2].plot([x[1] for x in trainer.loss_history])

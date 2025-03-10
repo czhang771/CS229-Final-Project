@@ -18,12 +18,15 @@ class Learner(ABC):
         self.terminal = terminal
         self.optimizer = Optimizer.create_optimizer(self.model, optimizer_name, param_dict)
     
-    def act(self, state: torch.Tensor, epsilon: float = 0.0) -> int:
+    def act(self, state: torch.Tensor, epsilon: float = 0.0, random_threshold: float = 0.8) -> int:
         """Act on a state with epsilon-greedy policy; set 0 for greedy, 1 for completely random"""
         logits = self.model(state)
         if np.random.rand() < epsilon:
-            # sample from distribution, NOT randomly
-            action = torch.multinomial(torch.softmax(logits, dim = 1), num_samples = 1)
+            if np.random.rand() < random_threshold:
+                # sample from distribution, NOT randomly
+                action = torch.multinomial(torch.softmax(logits, dim = 1), num_samples = 1)
+            else:
+                action = torch.randint(0, logits.shape[1], (1,))
         else:
             # greedy
             action = torch.argmax(logits, dim = 1)
@@ -86,19 +89,21 @@ class ActorCriticLearner(Learner):
     def model(self):
         return self.actor_model
 
-    def actor_loss(self, states, actions):
+    def actor_loss(self, states, actions, entropy_coef = 0.0):
         B = states.shape[0]
         actions = actions.view(B, 1)
         logits = self.actor_model(states, batched = True)
         log_probs = torch.log_softmax(logits, dim = 1)
+        probs = torch.softmax(logits, dim = 1)
         action_log_probs = torch.gather(log_probs, dim = 1, index = actions)
 
         # make sure Q values are not affecting gradient
         Q_values = self.critic_model(states, batched = True).detach()
         Q_values = torch.gather(Q_values, dim = 1, index = actions)
         
-        actor_loss = -1 * torch.mean(action_log_probs * Q_values)
-        return actor_loss
+        actor_loss = -1 * torch.mean(action_log_probs * Q_values)   
+        entropy = -1 * torch.sum(probs * torch.log(probs), dim = 1)
+        return actor_loss + entropy_coef * entropy.mean()
 
     def critic_loss(self, states, actions, rewards, next_states, next_actions, gamma):
         B = states.shape[0]
@@ -114,10 +119,3 @@ class ActorCriticLearner(Learner):
         # critic_loss = -1 * torch.mean(delta_t * Q_prev_values) also works but then must detach delta_t
         critic_loss = torch.mean(torch.pow(delta_t, 2))
         return critic_loss
-
-class PPOLearner(Learner):
-    def __init__(self, model, device):
-        super().__init__(model, device)
-
-    def act(self, state):
-        pass

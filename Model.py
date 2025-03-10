@@ -13,6 +13,10 @@ class Model(ABC, nn.Module):
         # should return LOGITS over actions (outputs)
         pass
 
+def init_weights(m):
+    if isinstance(m, torch.nn.Linear):
+        torch.nn.init.orthogonal_(m.weight, gain=np.sqrt(2))
+        torch.nn.init.zeros_(m.bias)
 
 class LogReg(Model):
     """Simple logistic regression baseline in the spirit of CS229"""
@@ -74,11 +78,10 @@ class LSTMCell(nn.Module):
     """LSTM cell implementation"""
 
     def __init__(self, d_input: int, d_output: int, d_hidden: int):
+        super().__init__()
         self.d_input = d_input
         self.d_output = d_output
         self.d_hidden = d_hidden
-
-        super().__init__()
         # LSTM layers; note we are using concatenation rather than learning separate U weights; this is equivalent
         self.W_f = nn.Parameter(torch.randn(d_input + d_hidden, d_output))
         self.W_c = nn.Parameter(torch.randn(d_input + d_hidden, d_output))

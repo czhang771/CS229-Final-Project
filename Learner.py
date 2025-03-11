@@ -21,16 +21,37 @@ class Learner(ABC):
     def act(self, state: torch.Tensor, epsilon: float = 0.0, random_threshold: float = 0.8) -> int:
         """Act on a state with epsilon-greedy policy; set 0 for greedy, 1 for completely random"""
         logits = self.model(state)
+
+        # Detect and replace NaN/Inf in logits
+        if torch.isnan(logits).any() or torch.isinf(logits).any():
+            print(f"Warning: NaN or Inf detected in logits. Clamping values.")
+            logits = torch.nan_to_num(logits, nan=0.0, posinf=1e3, neginf=-1e3)  # Replace NaN with 0, Inf with large finite values
+
+        # Clamp logits to prevent extreme values that could break softmax
+        logits = torch.clamp(logits, min=-20, max=20)
+
+        # Apply softmax and check for valid probabilities
+        probs = torch.softmax(logits, dim=1)
+
+        # Ensure probabilities are valid before sampling
+        if torch.isnan(probs).any() or (probs < 0).any() or torch.isinf(probs).any() or torch.sum(probs) <= 0:
+            print(f"Warning: Invalid probabilities detected, replacing with uniform distribution.")
+            probs = torch.full_like(probs, 1.0 / probs.shape[1])  # Replace with uniform probabilities
+
         if np.random.rand() < epsilon:
             if np.random.rand() < random_threshold:
-                # sample from distribution, NOT randomly
-                action = torch.multinomial(torch.softmax(logits, dim = 1), num_samples = 1)
+                # Ensure `probs` sum is valid before calling `multinomial`
+                if torch.sum(probs) <= 0 or torch.any(probs < 0):
+                    print(f"Warning: Invalid probability distribution, replacing with uniform distribution.")
+                    probs = torch.full_like(probs, 1.0 / probs.shape[1])  # Reset to uniform probabilities
+
+                action = torch.multinomial(probs, num_samples=1)
             else:
-                action = torch.randint(0, logits.shape[1], (1,))
+                action = torch.randint(0, probs.shape[1], (1,))
         else:
-            # greedy
-            action = torch.argmax(logits, dim = 1)
-        
+            # Greedy selection
+            action = torch.argmax(probs, dim=1)
+
         return int(action)
 
 

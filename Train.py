@@ -79,7 +79,7 @@ class Trainer:
         if eval_opponent: self.opponent = original_opponent
         
         score = sum([t.my_payoff for t in trajectories]) / num_games
-        print(f"Score: {score}")
+        #print(f"Score: {score}")
         return score
     
     def train_MC(self, epochs: int, game_length: int, num_games: int):
@@ -99,8 +99,8 @@ class Trainer:
             # logging
             self.score_history.append(sum([t.my_payoff for t in trajectories]) / len(trajectories)) 
             self.loss_history.append(loss.item())
-            if i % 1 == 0:
-                print(f"Epoch {i}, score: {self.score_history[-1]}, loss: {self.loss_history[-1]}")
+            #if i % 1 == 0:
+                #print(f"Epoch {i}, score: {self.score_history[-1]}, loss: {self.loss_history[-1]}")
 
     def train_AC(self, epochs: int, game_length: int, num_games: int, batch_size: int = 5):
         """Train using actor-critic"""
@@ -114,8 +114,8 @@ class Trainer:
             self.learner.actor_optimizer.scheduler_step()
             self.learner.critic_optimizer.scheduler_step()
 
-            if i % 1 == 0:
-                print(f"Epoch {i}, score: {self.score_history[-1]}, actor loss: {self.loss_history[-1][0]}, critic loss: {self.loss_history[-1][1]}")
+            #if i % 1 == 0:
+                #print(f"Epoch {i}, score: {self.score_history[-1]}, actor loss: {self.loss_history[-1][0]}, critic loss: {self.loss_history[-1][1]}")
 
     def train_AC_batch(self, game_length: int, num_games: int, batch_size: int, epsilon_t = 1.0):
         # (inefficient) parallel environments
@@ -186,7 +186,7 @@ class Trainer:
 
             
 
-        envs[0].print_game_sequence()
+        #envs[0].print_game_sequence()
         # logging
         trajectories = []
         for i in range(num_games):

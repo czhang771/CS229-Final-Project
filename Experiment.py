@@ -9,6 +9,13 @@ from Learner import PolicyGradientLearner, ActorCriticLearner
 from IPDEnvironment import IPDEnvironment
 from Strategy import *
 
+PAYOFF_MATRIX = {
+    (0, 0): (3, 3),
+    (0, 1): (0, 5),
+    (1, 0): (5, 0),
+    (1, 1): (1, 1),
+}
+
 RESULTS_DIR = "results/"
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
@@ -17,9 +24,9 @@ def load_config(config_path="config.yaml"):
     with open(config_path, "r") as file:
         return yaml.safe_load(file)
     
-def create_learner(learner_type, actor_model, critic_model_type, device, optimizer, lr, scheduler):
+def create_learner(learner_type, actor_model, critic_model_type, device, optimizer, lr, scheduler, scheduler_params):
     """Creates the learner based on experiment config."""
-    param_dict = {"lr": lr, "scheduler_type": scheduler}
+    param_dict = {"lr": lr, "scheduler_type": scheduler, "scheduler_params": scheduler_params}
 
     if learner_type == "policy_gradient":
         return PolicyGradientLearner(actor_model, device, optimizer, terminal=False, param_dict=param_dict)
@@ -100,7 +107,7 @@ def create_opponents(opponent_names, config):
 def run_all_experiments():
     """Runs all experiments with dynamically generated opponent combinations of fixed size."""
     config = load_config()
-    env = IPDEnvironment(num_rounds=config["training"]["num_games"], k=config["training"]["k"])
+    env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds=config["training"]["num_games"], k=config["training"]["k"])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     input_size = config["training"]["k"] * 2
@@ -112,12 +119,13 @@ def run_all_experiments():
         config["hyperparameters"]["learning_rates"],
         config["hyperparameters"]["optimizers"],
         config["hyperparameters"]["scheduler_types"],
+        config["hyperparameters"]["scheduler_params"]["gamma"],
         opponent_combinations  
     )
 
-    for idx, (lr, optimizer, scheduler, opponent_list) in enumerate(param_combinations):
+    for idx, (lr, optimizer, scheduler, gamma, opponent_list) in enumerate(param_combinations):
         actor_model = create_model(config["model"]["actor_model"], input_size, output_size, config["model"]["hidden_layers"])
-        learner = create_learner(config["training"]["learner_type"], actor_model, config["model"]["critic_model"], device, optimizer, lr, scheduler)
+        learner = create_learner(config["training"]["learner_type"], actor_model, config["model"]["critic_model"], device, optimizer, lr, scheduler, {"gamma": gamma})
         opponent_mix = create_opponents(opponent_list, config)
 
         trainer = Trainer(env, learner, opponent_mix, k=config["training"]["k"])

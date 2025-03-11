@@ -11,6 +11,7 @@ training:
 hyperparameters:
   learning_rates: [0.01, 0.001, 0.0005]
   scheduler_types: ["exponential", "step", "cosine"]
+  scheduler_params: {"gamma":  [0.9, 0.95, 0.99]}
   optimizers: ["adamw", "sgd"]
 
 opponents:

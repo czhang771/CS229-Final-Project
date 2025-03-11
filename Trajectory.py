@@ -27,18 +27,19 @@ class Trajectory:
         # iterated game length
         self.length = len(history)
     
-    def get_states(self) -> torch.Tensor:
+    def get_states(self, padding = True) -> torch.Tensor:
         """
         Returns a tensor of shape (length, k, 2) where each element is the k-windowed state.
         States are arranged chronologically from left to right.
-        Right padding with 2s is used when there isn't enough history.
+        Right padding with 2s is (optionally) used when there isn't enough history.
         """
         if self.length == 0:
             return torch.empty((0, self.k, 2))
-            
-        # initialize all values with padding (2)
-        padded_states = torch.full((self.length, self.k, 2), 2)
         
+        if padding:
+            # initialize all values with padding (2)
+            padded_states = torch.full((self.length, self.k, 2), 2)
+            
         for i in range(self.length):
             history = self.history[:i]
             if len(history) < self.k:

@@ -227,10 +227,10 @@ if __name__ == "__main__":
     # ACTOR-CRITIC EXAMPLES
     actor = LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS)
     critic = LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS)
-    actor = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k])
-    critic = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [8 * k, 4 * k, 4 * k])
-    # actor = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
-    # critic = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
+    # actor = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k])
+    # critic = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [8 * k, 4 * k, 4 * k])
+    actor = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
+    critic = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
 
     # IT REALLY WORKS A LOT BETTER IF THE THE CRITIC IS AN LSTM
     # THE HYPERPARAMETER TUNING IS REALLY ANNOYING

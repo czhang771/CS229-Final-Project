@@ -3,6 +3,8 @@ import torch.nn as nn
 import numpy as np
 from abc import ABC, abstractmethod
 
+PAD_TOKEN = 2
+
 class Model(ABC, nn.Module):
     """Base class for all policy models (classical or neural)"""
     def __init__(self):
@@ -92,7 +94,7 @@ class LSTMCell(nn.Module):
         self.b_i = nn.Parameter(torch.zeros(d_output))
         self.b_o = nn.Parameter(torch.zeros(d_output))
     
-    def forward(self, x: torch.Tensor, batched: bool = False):
+    def forward(self, x: torch.Tensor, batched: bool = False, mask: torch.Tensor = None):
         """
         returns:
             tuple: (outputs, (h_n, c_n))
@@ -100,34 +102,38 @@ class LSTMCell(nn.Module):
             - a_n: tensor containing the hidden state for the last time step
             - c_n: tensor containing the cell state for the last time step
         """
-        if batched:
-            B, T, D = x.shape
-            c_t = torch.zeros(B, self.d_output, device=x.device)
-            a_t = torch.zeros(B, self.d_output, device=x.device)
-            outputs = torch.zeros(B, T, self.d_output, device=x.device)
-        else:
-            T = x.shape[0]
-            c_t = torch.zeros(1, self.d_output, device=x.device)
-            a_t = torch.zeros(1, self.d_output, device=x.device)
-            outputs = torch.zeros(T, self.d_output, device=x.device)
+        B, T, D = x.shape
         
+        c_t = torch.zeros(B, self.d_output, device=x.device)
+        a_t = torch.zeros(B, self.d_output, device=x.device)
+        outputs = torch.zeros(B, T, self.d_output, device=x.device)
+
         for i in range(T):
-            if batched:
-                x_t = x[:, i, :]
-            else:
-                x_t = x[i, :].unsqueeze(0)
-            concat = torch.cat([x_t, a_t], dim=1)
+            x_t = x[:, i, :]
+
+            valid_batch = None
+            if mask is not None:
+                if mask[0, i] == PAD_TOKEN:
+                    continue
+                else:
+                    valid_batch = mask[:, i].unsqueeze(1)
+            
+            concat = torch.cat([x_t, a_t], dim = 1)
             f_t = torch.sigmoid(torch.matmul(concat, self.W_f) + self.b_f)
             i_t = torch.sigmoid(torch.matmul(concat, self.W_i) + self.b_i)
             o_t = torch.sigmoid(torch.matmul(concat, self.W_o) + self.b_o)
             tildec_t = torch.tanh(torch.matmul(concat, self.W_c) + self.b_c)
-            c_t = f_t * c_t + i_t * tildec_t
-            a_t = o_t * torch.tanh(c_t)
+            c_t_next = f_t * c_t + i_t * tildec_t
+            a_t_next = o_t * torch.tanh(c_t_next)
+
+            # only update if not padding
+            if valid_batch is not None:
+                c_t_next = torch.where(valid_batch, c_t_next, c_t)
+                a_t_next = torch.where(valid_batch, a_t_next, a_t)
             
-            if batched:
-                outputs[:, i, :] = a_t
-            else:
-                outputs[i, :] = a_t
+            outputs[:, i, :] = a_t_next
+            a_t = a_t_next
+            c_t = c_t_next
         
         return outputs, (a_t, c_t)
 
@@ -152,11 +158,19 @@ class LSTM(Model):
         nn.init.kaiming_normal_(self.fc_out.weight)
         nn.init.zeros_(self.fc_out.bias)
     
-    def forward(self, x: torch.Tensor, batched: bool = False) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, batched: bool = False, mask: torch.Tensor = None) -> torch.Tensor:
+        if not batched:
+            x = x.unsqueeze(0)
+
+        mask = self.create_padding_mask(x)
         for cell in self.cells:
-            x, (a_t, c_t) = cell(x, batched)
+            x, (a_t, c_t) = cell(x, batched, mask)
         
         return self.fc_out(a_t)
+    
+    def create_padding_mask(self, x: torch.Tensor) -> torch.Tensor:
+        return (x[:, :, 0] != PAD_TOKEN)
+
 
 if __name__ == "__main__":
     model = LSTM(10, 2, [10, 10])

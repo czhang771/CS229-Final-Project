@@ -57,7 +57,7 @@ class Trainer:
                 action2 = opponent.act(state)
                 next_state, reward1, reward2 = self.env.step(action1, action2)
             
-            # self.env.print_game_sequence()
+            self.env.print_game_sequence()
             
             # just to be explicitly clear about order
             if AGENT == 1: 
@@ -184,6 +184,8 @@ class Trainer:
             critic_loss.backward()
             self.learner.critic_optimizer.step()
 
+            envs[0].print_game_sequence()
+
             
 
         #envs[0].print_game_sequence()
@@ -207,8 +209,6 @@ class Trainer:
 
 if __name__ == "__main__":
     # set random seed
-    torch.manual_seed(0)
-    np.random.seed(0)
 
     # non terminal reward basically doesn't work!
     k = 5
@@ -218,40 +218,48 @@ if __name__ == "__main__":
     
     # # POLICY GRADIENTS EXAMPLES
     # # learner = PolicyGradientLearner(LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS), device, "adam", terminal = False, param_dict = {"lr": 0.05})
-    learner = PolicyGradientLearner(MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k]), device, "adamw", terminal = False, param_dict = {"lr": 0.01})
-    # learner = PolicyGradientLearner(LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [8 * STATE_DIM, 4 * STATE_DIM]), device, "adamw", terminal = True, param_dict = {"lr": 0.01})
-    trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99, random_threshold = 0.8, min_epsilon = 0.5)
-    trainer.train_MC(epochs = 40, num_games = 10, game_length = 20)
-    trainer.evaluate(game_length = 20, num_games = 10, eval_opponent = Du())
+    # learner = PolicyGradientLearner(MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k]), device, "adamw", terminal = False, param_dict = {"lr": 0.01})
+    # # learner = PolicyGradientLearner(LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [8 * STATE_DIM, 4 * STATE_DIM]), device, "adamw", terminal = True, param_dict = {"lr": 0.01})
+    # trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99, random_threshold = 0.8, min_epsilon = 0.5)
+    # trainer.train_MC(epochs = 40, num_games = 10, game_length = 20)
+    # trainer.evaluate(game_length = 20, num_games = 10, eval_opponent = Du())
 
     # ACTOR-CRITIC EXAMPLES
     # actor = LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS)
     # critic = LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS)
-    # # actor = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k])
-    # # critic = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [8 * k, 4 * k, 4 * k])
+    actor = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k])
+    critic = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [8 * k, 4 * k, 4 * k])
     # actor = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
     # critic = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
 
-    # # IT REALLY WORKS A LOT BETTER IF THE THE CRITIC IS AN LSTM
-    # # THE HYPERPARAMETER TUNING IS REALLY ANNOYING
+    # IT REALLY WORKS A LOT BETTER IF THE THE CRITIC IS AN LSTM
+    # THE HYPERPARAMETER TUNING IS REALLY ANNOYING
 
-    # # TODO:
-    # # make LSTM only use actual history (not padding)
-    # # figure out a better way than padding?
+    # TODO:
+    # make LSTM only use actual history (not padding)
+    # figure out a better way than padding?
 
-    # learner = ActorCriticLearner(actor, critic, device, 
-    #                              actor_optimizer = "adamw", 
-    #                              critic_optimizer = "adamw", 
-    #                              terminal = False, 
-    #                              param_dict = {"actor": {"lr": 0.005, "scheduler_type":"exponential", "scheduler_params": {"gamma": 0.999}},
-    #                                             "critic": {"lr": 0.001, "scheduler_type":"exponential", "scheduler_params": {"gamma": 0.999}} })
+    learner = ActorCriticLearner(actor, critic, device, 
+                                 actor_optimizer = "adamw", 
+                                 critic_optimizer = "adamw", 
+                                 terminal = False, 
+                                 param_dict = {"actor": {"lr": 0.005, "scheduler_type":"exponential", "scheduler_params": {"gamma": 0.999}},
+                                                "critic": {"lr": 0.001, "scheduler_type":"exponential", "scheduler_params": {"gamma": 0.999}} })
     
-    # trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99, random_threshold = 0.8, min_epsilon = 0.1)
+    trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99, random_threshold = 0.5, min_epsilon = 0.1)
     
-    # trainer.train_AC(epochs = 100, game_length = 20, num_games = 10, batch_size = 10)
+    trainer.train_AC(epochs = 50, game_length = 20, num_games = 10, batch_size = 10)
+    print(trainer.evaluate(game_length = 20, num_games = 1, eval_opponent = Du()))
     
-    # fig, ax = plt.subplots(3, 1)
-    # ax[0].plot(trainer.score_history)
-    # ax[1].plot([x[0] for x in trainer.loss_history])
-    # ax[2].plot([x[1] for x in trainer.loss_history])
-    # plt.show()
+    fig, ax = plt.subplots(3, 1)
+    ax[0].set_title("Actor-Critic Training")
+    # y axis labels
+    ax[0].set_ylabel("avg. cum. reward")
+    ax[1].set_ylabel("actor loss")
+    ax[2].set_ylabel("critic loss")
+    ax[0].plot(trainer.score_history, c = 'k')
+    ax[1].plot([x[0] for x in trainer.loss_history], c = 'k')
+    ax[2].plot([x[1] for x in trainer.loss_history], c = 'k')
+    plt.tight_layout()
+    plt.savefig("ac_curve.pdf")
+    plt.show()

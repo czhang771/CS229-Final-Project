@@ -115,7 +115,8 @@ class ActorCriticLearner(Learner):
     def model(self):
         return self.actor_model
 
-    def actor_loss(self, states, actions, entropy_coef = 0.0):
+    def actor_loss(self, states, actions, entropy_coef = 0.2):
+        # states: shape B x (2k)
         B = states.shape[0]
         actions = actions.view(B, 1)
         logits = self.actor_model(states, batched = True)
@@ -128,8 +129,9 @@ class ActorCriticLearner(Learner):
         Q_values = torch.gather(Q_values, dim = 1, index = actions)
         
         actor_loss = -1 * torch.mean(action_log_probs * Q_values)   
-        entropy = -1 * torch.sum(probs * torch.log(probs), dim = 1)
-        return actor_loss + entropy_coef * entropy.mean()
+        entropy = -1 * torch.sum(probs * log_probs, dim = 1)
+        # we want to maximize entropy
+        return actor_loss - entropy_coef * entropy.mean()
 
     def critic_loss(self, states, actions, rewards, next_states, next_actions, gamma):
         B = states.shape[0]

@@ -65,7 +65,7 @@ class Trainer:
                 trajectories.append(Trajectory(self.env.history, self.k, self.env.payoff1, self.env.payoff2))
             else: trajectories.append(Trajectory(self.env.history, self.k, self.env.payoff2, self.env.payoff1))
 
-            print(self.env.history)
+            #print(self.env.history)
         return trajectories
 
     def evaluate(self, game_length: int, num_games: int, eval_opponent: Strategy = None):
@@ -100,8 +100,8 @@ class Trainer:
             # logging
             self.score_history.append(sum([t.my_payoff for t in trajectories]) / len(trajectories)) 
             self.loss_history.append(loss.item())
-            if i % 1 == 0:
-                print(f"Epoch {i}, score: {self.score_history[-1]}, loss: {self.loss_history[-1]}")
+            #if i % 1 == 0:
+                #print(f"Epoch {i}, score: {self.score_history[-1]}, loss: {self.loss_history[-1]}")
 
     def train_AC(self, epochs: int, game_length: int, num_games: int, batch_size: int = 5):
         """Train using actor-critic"""
@@ -185,7 +185,7 @@ class Trainer:
             critic_loss.backward()
             self.learner.critic_optimizer.step()
 
-            envs[0].print_game_sequence()
+            #envs[0].print_game_sequence()
 
             
 

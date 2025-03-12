@@ -42,7 +42,7 @@ total_runs = len(learning_rates) * len(scheduler_gammas) * len(seeds) * (len(pol
 def run_experiments ():
     # Store results
     results = {}
-    for lr, gamma, critic_lr in itertools.product(learning_rates, scheduler_gammas, critic_learning_rates):
+    for lr, gamma in itertools.product(learning_rates, scheduler_gammas):
         for model_class in policy_gradient_models:
             scores = []
             losses = []
@@ -72,29 +72,25 @@ def run_experiments ():
                 scores.append(np.mean(trainer.score_history))
                 losses.append(np.mean(trainer.loss_history))
 
-            results[f"PG_{model_class.__name__}_LR{lr}_G{gamma}"] = {
-                "avg_score": np.mean(scores),
-                "avg_loss": np.mean(losses)
-            }
-
             key = f"PG_{model_class.__name__}_LR{lr}_G{gamma}"
             results[key] = {
                 "avg_score": np.mean(scores),
                 "avg_loss": np.mean(losses)
             }
-
+            
             # Print & Save Progress
             print(f"Saving: {key} → {results[key]}")
             with open("hyperparameter_results.json", "w") as f:
                 json.dump(results, f, indent=4)
-
-
+            
+    for lr, gamma, critic_lr in itertools.product(learning_rates, scheduler_gammas, critic_learning_rates):
         for actor_name, critic_name in actor_critic_models:
             scores = []
             losses = []
             for seed in seeds:
                 torch.manual_seed(seed)
                 np.random.seed(seed)
+                random.seed(seed)
 
                 # Setup environment and opponent
                 env = IPDEnvironment(PAYOFF_MATRIX, num_rounds, k)
@@ -116,7 +112,7 @@ def run_experiments ():
                 scores.append(np.mean(trainer.score_history))
                 losses.append(np.mean([x[0] + x[1] for x in trainer.loss_history]))  # Sum actor and critic loss
 
-            key = f"AC_{actor_name}_{critic_name}_LR{lr}_G{gamma}"
+            key = f"AC_{actor_name}_{critic_name}_ALR{lr}_CLR{critic_lr}_G{gamma}"
             results[key] = {
                 "avg_score": np.mean(scores),
                 "avg_loss": np.mean(losses)
@@ -126,8 +122,10 @@ def run_experiments ():
             print(f"Saving: {key} → {results[key]}")
             with open("hyperparameter_results.json", "w") as f:
                 json.dump(results, f, indent=4)
+    print("Hyperparameter tuning complete. Results saved.")
 
-def sort_results(json_file, output_file="sorted_avg_loss_hyperparameter_results.json"):
+
+def sort_results(json_file, output_file="sorted_avg_score_hyperparameter_results.json"):
     """Sorts results into PolicyGradient (MLP, LSTM) and ActorCritic based on avg_score, then saves to a new JSON file."""
     
     # Load JSON data
@@ -137,7 +135,7 @@ def sort_results(json_file, output_file="sorted_avg_loss_hyperparameter_results.
     # Convert to list of tuples [(key, value), ...] and remove NaN values
     data = [
         (key, value) for key, value in results.items() 
-        if not (isinstance(value["avg_loss"], float) and math.isnan(value["avg_loss"]))
+        if not (isinstance(value["avg_score"], float) and math.isnan(value["avg_score"]))
     ]
 
     # Separate categories
@@ -146,9 +144,9 @@ def sort_results(json_file, output_file="sorted_avg_loss_hyperparameter_results.
     ac_all = [(k, v) for k, v in data if k.startswith("AC_")]
 
     # Sort each category by avg_score (descending)
-    pg_mlp_sorted = sorted(pg_mlp, key=lambda x: x[1]["avg_loss"])
-    pg_lstm_sorted = sorted(pg_lstm, key=lambda x: x[1]["avg_loss"])
-    ac_sorted = sorted(ac_all, key=lambda x: x[1]["avg_loss"])
+    pg_mlp_sorted = sorted(pg_mlp, key=lambda x: x[1]["avg_score"])
+    pg_lstm_sorted = sorted(pg_lstm, key=lambda x: x[1]["avg_score"])
+    ac_sorted = sorted(ac_all, key=lambda x: x[1]["avg_score"])
 
     # Convert sorted data back to dictionary format
     sorted_data = {
@@ -165,5 +163,5 @@ def sort_results(json_file, output_file="sorted_avg_loss_hyperparameter_results.
 
 
 if __name__ == "__main__":
-    run_experiments()
+    sort_results("hyperparameter_results.json")
     

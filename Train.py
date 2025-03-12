@@ -99,8 +99,8 @@ class Trainer:
             # logging
             self.score_history.append(sum([t.my_payoff for t in trajectories]) / len(trajectories)) 
             self.loss_history.append(loss.item())
-            #if i % 1 == 0:
-                #print(f"Epoch {i}, score: {self.score_history[-1]}, loss: {self.loss_history[-1]}")
+            if i % 1 == 0:
+                print(f"Epoch {i}, score: {self.score_history[-1]}, loss: {self.loss_history[-1]}")
 
     def train_AC(self, epochs: int, game_length: int, num_games: int, batch_size: int = 5):
         """Train using actor-critic"""
@@ -213,45 +213,45 @@ if __name__ == "__main__":
     # non terminal reward basically doesn't work!
     k = 5
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    env = IPDEnvironment(payoff_matrix = PAYOFF_MATRIX, max_rounds = 1000, k = k)
-    opponent = Cu() 
+    env = IPDEnvironment(payoff_matrix = PAYOFF_MATRIX, num_rounds = 100, k = k)
+    opponent = TFT() 
     
     # # POLICY GRADIENTS EXAMPLES
     # # learner = PolicyGradientLearner(LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS), device, "adam", terminal = False, param_dict = {"lr": 0.05})
-    # learner = PolicyGradientLearner(MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k]), device, "adamw", terminal = False, param_dict = {"lr": 0.01})
-    # # learner = PolicyGradientLearner(LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [8 * STATE_DIM, 4 * STATE_DIM]), device, "adamw", terminal = True, param_dict = {"lr": 0.01})
-    # trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99, random_threshold = 0.8, min_epsilon = 0.5)
-    # trainer.train_MC(epochs = 40, num_games = 10, game_length = 20)
-    # trainer.evaluate(game_length = 20, num_games = 10, eval_opponent = Du())
+    learner = PolicyGradientLearner(MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k]), device, "adamw", terminal = False, param_dict = {"lr": 0.01})
+    # learner = PolicyGradientLearner(LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [8 * STATE_DIM, 4 * STATE_DIM]), device, "adamw", terminal = True, param_dict = {"lr": 0.01})
+    trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99, random_threshold = 0.8, min_epsilon = 0.5)
+    trainer.train_MC(epochs = 40, num_games = 10, game_length = 20)
+    trainer.evaluate(game_length = 20, num_games = 10, eval_opponent = Du())
 
     # ACTOR-CRITIC EXAMPLES
-    actor = LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS)
-    critic = LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS)
-    # actor = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k])
-    # critic = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [8 * k, 4 * k, 4 * k])
-    actor = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
-    critic = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
+    # actor = LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS)
+    # critic = LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS)
+    # # actor = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k])
+    # # critic = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [8 * k, 4 * k, 4 * k])
+    # actor = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
+    # critic = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
 
-    # IT REALLY WORKS A LOT BETTER IF THE THE CRITIC IS AN LSTM
-    # THE HYPERPARAMETER TUNING IS REALLY ANNOYING
+    # # IT REALLY WORKS A LOT BETTER IF THE THE CRITIC IS AN LSTM
+    # # THE HYPERPARAMETER TUNING IS REALLY ANNOYING
 
-    # TODO:
-    # make LSTM only use actual history (not padding)
-    # figure out a better way than padding?
+    # # TODO:
+    # # make LSTM only use actual history (not padding)
+    # # figure out a better way than padding?
 
-    learner = ActorCriticLearner(actor, critic, device, 
-                                 actor_optimizer = "adamw", 
-                                 critic_optimizer = "adamw", 
-                                 terminal = False, 
-                                 param_dict = {"actor": {"lr": 0.005, "scheduler_type":"exponential", "scheduler_params": {"gamma": 0.999}},
-                                                "critic": {"lr": 0.001, "scheduler_type":"exponential", "scheduler_params": {"gamma": 0.999}} })
+    # learner = ActorCriticLearner(actor, critic, device, 
+    #                              actor_optimizer = "adamw", 
+    #                              critic_optimizer = "adamw", 
+    #                              terminal = False, 
+    #                              param_dict = {"actor": {"lr": 0.005, "scheduler_type":"exponential", "scheduler_params": {"gamma": 0.999}},
+    #                                             "critic": {"lr": 0.001, "scheduler_type":"exponential", "scheduler_params": {"gamma": 0.999}} })
     
-    trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99, random_threshold = 0.8, min_epsilon = 0.1)
+    # trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99, random_threshold = 0.8, min_epsilon = 0.1)
     
-    trainer.train_AC(epochs = 100, game_length = 20, num_games = 10, batch_size = 10)
+    # trainer.train_AC(epochs = 100, game_length = 20, num_games = 10, batch_size = 10)
     
-    fig, ax = plt.subplots(3, 1)
-    ax[0].plot(trainer.score_history)
-    ax[1].plot([x[0] for x in trainer.loss_history])
-    ax[2].plot([x[1] for x in trainer.loss_history])
-    plt.show()
+    # fig, ax = plt.subplots(3, 1)
+    # ax[0].plot(trainer.score_history)
+    # ax[1].plot([x[0] for x in trainer.loss_history])
+    # ax[2].plot([x[1] for x in trainer.loss_history])
+    # plt.show()

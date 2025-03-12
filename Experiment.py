@@ -22,7 +22,7 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 def load_config(config_path="config.yaml"):
     """Load experiment settings from YAML file."""
     with open(config_path, "r") as file:
-        return yaml.safe_load(file)
+        return yaml.safe_load(file), config_path
     
 def create_learner(learner_type, actor_model, critic_model_type, device, optimizer, lr, scheduler, scheduler_params):
     """Creates the learner based on experiment config."""
@@ -82,9 +82,9 @@ def create_opponents(opponent_names, config):
         "Cu": Cu(),
         "Du": Du(),
         "Random": Random(),
-        "Cp": Cp(config["strategy_params"].get("Cp_p", 0.5)),  
+        "Cp": Cp(config["strategy_params"].get("Cp_p", 0.7)),  
         "TFT": TFT(),
-        "ImpTFT": ImpTFT(config["strategy_params"].get("ImpTFT_p", 0.9)),
+        "ImpTFT": ImpTFT(config["strategy_params"].get("ImpTFT_p", 0.95)),
         "GTFT": GTFT(
             R=config["strategy_params"].get("GTFT_R", 3),
             P=config["strategy_params"].get("GTFT_P", 1),
@@ -104,9 +104,9 @@ def create_opponents(opponent_names, config):
     
     return opponents
 
-def run_all_experiments():
+def run_all_experiments(config_name):
     """Runs all experiments with dynamically generated opponent combinations of fixed size."""
-    config = load_config()
+    config, config_filename = load_config(config_name)
     env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds=config["training"]["num_games"], k=config["training"]["k"])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -122,6 +122,8 @@ def run_all_experiments():
         config["hyperparameters"]["scheduler_params"]["gamma"],
         opponent_combinations  
     )
+    
+    all_results = {}
 
     for idx, (lr, optimizer, scheduler, gamma, opponent_list) in enumerate(param_combinations):
         actor_model = create_model(config["model"]["actor_model"], input_size, output_size, config["model"]["hidden_layers"])
@@ -132,11 +134,13 @@ def run_all_experiments():
         trainer.train_MC(epochs=config["training"]["epochs"], num_games=config["training"]["num_games"], game_length=config["training"]["game_length"])
 
         # Save results
-        save_name = f"{config['experiment_name']}_L{config['training']['learner_type']}_A{config['model']['actor_model']}_C{config['model']['critic_model']}_LR{lr}_OPT{optimizer}_SCH{scheduler}_OPP{''.join(opponent_list)}"
+        opp_string = "_".join(opponent_list)  
+        save_name = f"{config['experiment_name']}_L{config['training']['learner_type']}_A{config['model']['actor_model']}_C{config['model']['critic_model']}_LR{lr}_OPT{optimizer}_SCH{scheduler}_OPP{opp_string}"
+       
         model_path = f"{RESULTS_DIR}/{save_name}.pth"
         torch.save(learner.model.state_dict(), model_path)
 
-        results = {
+        all_results[save_name] = {
             "learner_type": config["training"]["learner_type"],
             "learning_rate": lr,
             "scheduler": scheduler,
@@ -145,11 +149,16 @@ def run_all_experiments():
             "critic_model_type": config["model"]["critic_model"],
             "opponents": opponent_list,
             "final_score": trainer.score_history[-1],
-            "loss_history": trainer.loss_history
+            "loss_history": trainer.loss_history,
+            "model_path": model_path
         }
-        json.dump(results, open(f"{RESULTS_DIR}/{save_name}.json", "w"))
-
         print(f"Finished experiment: {save_name}")
+    json_filename = f"{RESULTS_DIR}/{os.path.splitext(os.path.basename(config_filename))[0]}.json"
+    with open(json_filename, "w") as f:
+        json.dump(all_results, f, indent=4)
+
+    print(f"All experiment metadata saved to: {json_filename}")
+
 
 if __name__ == "__main__":
-    run_all_experiments()
+    run_all_experiments("config1.yaml")

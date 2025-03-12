@@ -57,7 +57,7 @@ class Random(Strategy):
 Cooperates with fixed probably p
 """  
 class Cp(Strategy):
-    def __init__(self, p):
+    def __init__(self, p=0.7):
         self.p = p
     
     def act(self, state):
@@ -91,7 +91,7 @@ class STFT(Strategy):
  g(R,P, T, S) = min{1- (T-R)/(R-S), (R-P)/(T-P)}
 """   
 class GTFT(Strategy):
-    def __init__(self, R, P, T, S):
+    def __init__(self, R=3, P=1, T=5, S=0):
         self.R = R
         self.P = P
         self.T = T
@@ -148,7 +148,7 @@ class GrdTFT(Strategy):
 
 """ Imitates opponent's last move with high (but less than one) probability."""
 class ImpTFT(Strategy):
-    def __init__(self, p):
+    def __init__(self, p=0.85):
         self.p = p
     
     def act(self, state):

@@ -2,31 +2,31 @@ experiment_name: "hyperparam_test"
 
 training:
   epochs: 50
-  num_games: 20
+  num_games: 10
   game_length: 20
-  k: 10
+  k: 5
   gamma: 0.99
   learner_type: "policy_gradient"  # Options: policy_gradient, actor_critic
 
 hyperparameters:
-  learning_rates: [0.01, 0.001, 0.0005]
-  scheduler_types: ["exponential", "step", "cosine"]
-  scheduler_params: {"gamma":  [0.9, 0.95, 0.99]}
-  optimizers: ["adamw", "sgd"]
+  learning_rates: [0.001]
+  scheduler_types: ["exponential"]
+  scheduler_params: {"gamma": [0.9]}
+  optimizers: ["adamw"]
 
 opponents:
   training: 
     available_strategies: ["TFT", "Cu", "Du", "Random", "Cp", "ImpTFT", "GTFT", "GRIM", "WSLS"]
-    num_opponents: 3 
+    num_opponents: 2
   evaluation:
     - "Random"
     - "Cu"
     - "Du"
 
 model:
-  actor_model: "LSTM" # Options: MLP, LSTM, LogReg
-  critic_model: "MLP"
-  hidden_layers: [40, 40]  # Only applicable for MLP
+  actor_model: "MLP" # Options: MLP, LSTM, LogReg
+  critic_model: "NA"
+  hidden_layers: [20, 20]  # Only applicable for MLP
 
 strategy_params:
   Cp_p: 0.7        # Cp cooperates with probability 0.7

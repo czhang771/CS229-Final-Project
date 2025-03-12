@@ -251,7 +251,7 @@ if __name__ == "__main__":
     #                              param_dict = {"actor": {"lr": 0.005, "scheduler_type":"exponential", "scheduler_params": {"gamma": 0.999}},
     #                                             "critic": {"lr": 0.001, "scheduler_type":"exponential", "scheduler_params": {"gamma": 0.999}} })
     
-    # trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99, random_threshold = 0.5, min_epsilon = 0.1)
+    # trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99, random_threshold = 0.5, min_epsilon = 0.1, entropy_coef = 0.1)
     
     # trainer.train_AC(epochs = 50, game_length = 20, num_games = 10, batch_size = 10)
     # print(trainer.evaluate(game_length = 20, num_games = 1, eval_opponent = Du()))

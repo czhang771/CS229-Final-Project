@@ -100,7 +100,7 @@ def run_experiments ():
                 env = IPDEnvironment(PAYOFF_MATRIX, num_rounds, k)
                 opponent = TFT()
 
-                # Instantiate models
+                # Instantiate models, TODO: MAKE SURE CRITIC MODEL IS LARGER
                 actor = MLP(d_input=STATE_DIM * k, d_output=NUM_ACTIONS, d_hidden=[4 * k, 4 * k]) if actor_name == "MLP" else LSTM(d_input=STATE_DIM, d_output=NUM_ACTIONS, d_hidden=[4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
                 critic = MLP(d_input=STATE_DIM * k, d_output=NUM_ACTIONS, d_hidden=[4 * k, 4 * k]) if critic_name == "MLP" else LSTM(d_input=STATE_DIM, d_output=NUM_ACTIONS, d_hidden=[4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
 

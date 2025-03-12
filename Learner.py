@@ -86,6 +86,11 @@ class PolicyGradientLearner(Learner):
             logits = self.model(states, batched = True)
             log_probs = torch.log_softmax(logits, dim = 1)
             action_log_probs = torch.gather(log_probs, dim = 1, index = actions)
+
+            gamma_prods = torch.tensor([gamma**i for i in range(len(actions))])
+            # gamma_prods = torch.ones_like(actions)
+            # hadamard product
+            A_t = A_t * gamma_prods
             
             # compute policy 'loss' (multiply by -1 to do EV maximization)
             policy_loss = -1 * torch.sum(action_log_probs * A_t)

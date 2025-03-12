@@ -236,8 +236,8 @@ if __name__ == "__main__":
     #actor = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
     #critic = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
 
-    # IT REALLY WORKS A LOT BETTER IF THE THE CRITIC IS AN LSTM
-    # THE HYPERPARAMETER TUNING IS REALLY ANNOYING
+    # # IT REALLY WORKS A LOT BETTER IF THE THE CRITIC IS AN LSTM
+    # # THE HYPERPARAMETER TUNING IS REALLY ANNOYING
 
     # TODO:
     # make LSTM only use actual history (not padding)
@@ -251,9 +251,9 @@ if __name__ == "__main__":
                                  param_dict = {"actor": {"lr": 0.005, "scheduler_type":"exponential", "scheduler_params": {"gamma": 0.999}},
                                                 "critic": {"lr": 0.001, "scheduler_type":"exponential", "scheduler_params": {"gamma": 0.999}} })
     
-    trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99, random_threshold = 0.8, min_epsilon = 0.1)
+    # trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99, random_threshold = 0.8, min_epsilon = 0.1)
     
-    trainer.train_AC(epochs = 100, game_length = 20, num_games = 10, batch_size = 10)
+    # trainer.train_AC(epochs = 100, game_length = 20, num_games = 10, batch_size = 10)
     
     fig, ax = plt.subplots(3, 1)
     ax[0].plot(trainer.score_history)

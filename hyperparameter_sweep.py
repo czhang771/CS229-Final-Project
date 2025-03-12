@@ -11,7 +11,8 @@ import math
 
 # Define hyperparameter search space
 learning_rates = [0.001, 0.005, 0.01]
-scheduler_gammas = [0.9, 0.9, 0.99, 0.999]
+critic_learning_rates = [0.0005, 0.001, 0.005]
+scheduler_gammas = [0.9, 0.99, 0.999]
 seeds = [42, 123, 999]  # Multiple seeds for averaging
 
 policy_gradient_models = [MLP, LSTM]
@@ -26,10 +27,9 @@ actor_critic_models = [
 NUM_ACTIONS = 2
 STATE_DIM = 2
 k = 5
-num_rounds = 1000
 epochs = 50
 num_games = 10
-game_length = 20
+num_rounds = game_length = 20
 batch_size = 10
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 PAYOFF_MATRIX = {
@@ -42,7 +42,7 @@ total_runs = len(learning_rates) * len(scheduler_gammas) * len(seeds) * (len(pol
 def run_experiments ():
     # Store results
     results = {}
-    for lr, gamma in itertools.product(learning_rates, scheduler_gammas):
+    for lr, gamma, critic_lr in itertools.product(learning_rates, scheduler_gammas, critic_learning_rates):
         for model_class in policy_gradient_models:
             scores = []
             losses = []
@@ -108,7 +108,7 @@ def run_experiments ():
                                             actor_optimizer="adamw", critic_optimizer="adamw",
                                             terminal=False,
                                             param_dict={"actor": {"lr": lr, "scheduler_type": "exponential", "scheduler_params": {"gamma": gamma}},
-                                                        "critic": {"lr": lr, "scheduler_type": "exponential", "scheduler_params": {"gamma": gamma}}})
+                                                        "critic": {"lr": critic_lr, "scheduler_type": "exponential", "scheduler_params": {"gamma": gamma}}})
 
                 trainer = Trainer(env, learner, opponent, k=k, gamma=0.99)
                 trainer.train_AC(epochs=epochs, game_length=game_length, num_games=num_games, batch_size=batch_size)

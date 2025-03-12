@@ -60,7 +60,7 @@ class PolicyGradientLearner(Learner):
     def __init__(self, model: Model, device: torch.device, optimizer_name: str, terminal: bool = True, param_dict = {}):
         super().__init__(model, device, optimizer_name, terminal, param_dict)
 
-    def loss(self, taus: list[Trajectory], gamma: float, entropy_coef: float = 0.0) -> torch.Tensor:
+    def loss(self, taus: list[Trajectory], gamma: float, entropy_coef: float = 0.1) -> torch.Tensor:
         # taus = list of trajectories
         losses = []
         all_Rt = []
@@ -119,7 +119,7 @@ class ActorCriticLearner(Learner):
     def model(self):
         return self.actor_model
 
-    def actor_loss(self, states, actions, entropy_coef = 0.2):
+    def actor_loss(self, states, actions, entropy_coef = 0.1):
         # states: shape B x (2k)
         B = states.shape[0]
         actions = actions.view(B, 1)

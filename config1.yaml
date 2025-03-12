@@ -2,8 +2,8 @@ experiment_name: "hyperparam_test"
 
 training:
   epochs: 50
-  num_games: 10
-  game_length: 20
+  num_games: 20
+  game_length: 10
   k: 5
   gamma: 0.99
   learner_type: "policy_gradient"  # Options: policy_gradient, actor_critic
@@ -18,14 +18,11 @@ opponents:
   training: 
     available_strategies: ["TFT", "Cu", "Du", "Random", "Cp", "ImpTFT", "GTFT", "GRIM", "WSLS"]
     num_opponents: 2
-  evaluation:
-    - "Random"
-    - "Cu"
-    - "Du"
+    num_samples: 9 
 
 model:
   actor_model: "MLP" # Options: MLP, LSTM, LogReg
-  critic_model: "NA"
+  critic_model: None
   hidden_layers: [20, 20]  # Only applicable for MLP
 
 strategy_params:

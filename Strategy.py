@@ -1,6 +1,7 @@
 import numpy as np
 import random 
 from abc import ABC, abstractmethod
+from BaseLM import BaseLM
 
 COOPERATE = 0
 DEFECT = 1
@@ -251,5 +252,21 @@ class WSLS(Strategy):
 Strong (gold, highly adaptable) opponent, implementation to be figured out
 """
 class Strong(Strategy):
+    def __init__(self, model_config_path="LLMconfig.yaml"):
+        self.model = BaseLM.from_config(model_config_path)
     def act(self, state):
-        return COOPERATE
+        key = {COOPERATE: "COOPERATE", DEFECT: "DEFECT", 2:"UNKNOWN"}
+        prompt = "Given the last {} rounds of an Iterated Prisoner's Dilemma in the format (opponent move, your move):\n".format(len(state))
+        for i, (my_action, opp_action) in enumerate(state, 1):
+            prompt += f"{i}. ({key[int(my_action.item())]}, {key[int(opp_action.item())]})\n"
+        prompt += "\nShould you cooperate (0) or defect (1)? Remember, this is an iterated game, so always defecting is not necessarily the best strategy. Respond with only '0' or '1'."
+        #print(prompt)
+        response = self.model.generate_text(prompt).strip()
+        #print(response)
+        if response == "0":
+            return COOPERATE
+        elif response == "1":
+            return DEFECT
+        else:
+            print(f"Warning: Unexpected LLM response: {response}. Defaulting to COOPERATE.")
+            return COOPERATE

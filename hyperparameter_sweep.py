@@ -164,4 +164,6 @@ def sort_results(json_file, output_file="sorted_avg_loss_hyperparameter_results.
     print(f"Sorted results saved to {output_file}")
 
 
-sort_results("hyperparameter_results.json")
+if __name__ == "__main__":
+    run_experiments()
+    

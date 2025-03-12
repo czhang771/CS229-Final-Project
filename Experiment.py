@@ -23,20 +23,20 @@ def load_config(config_path="config.yaml"):
     """Load experiment settings from YAML file."""
     with open(config_path, "r") as file:
         return yaml.safe_load(file), config_path
-    
-def create_learner(learner_type, actor_model, critic_model_type, device, optimizer, lr, scheduler, scheduler_params):
+
+def create_pg_learner(actor_model, device, optimizer, lr, scheduler, scheduler_params):
+    param_dict = {"lr": lr, "scheduler_type": scheduler, "scheduler_params": scheduler_params}
+    return PolicyGradientLearner(actor_model, device, optimizer, terminal=False, param_dict=param_dict)
+
+
+
+def create_ac_learner(actor_model, critic_model_type, device, optimizer, lr, scheduler, scheduler_params):
     """Creates the learner based on experiment config."""
     param_dict = {"lr": lr, "scheduler_type": scheduler, "scheduler_params": scheduler_params}
-
-    if learner_type == "policy_gradient":
-        return PolicyGradientLearner(actor_model, device, optimizer, terminal=False, param_dict=param_dict)
-
-    elif learner_type == "actor_critic":
-        critic_model = create_model(critic_model_type, actor_model.d_input, actor_model.d_output, actor_model.hidden_sizes)
-        return ActorCriticLearner(actor_model, critic_model, device, optimizer, optimizer, terminal=False, 
+    critic_model = create_model(critic_model_type, actor_model.d_input, actor_model.d_output, actor_model.hidden_sizes)
+    return ActorCriticLearner(actor_model, critic_model, device, optimizer, optimizer, terminal=False, 
                                   param_dict={"actor": param_dict, "critic": param_dict})
-    else:
-        raise ValueError(f"Unsupported learner type: {learner_type}")
+   
     
 def create_model(model_type, input_size, output_size, hidden_layers):
     """Creates model based on config."""
@@ -61,11 +61,18 @@ def create_opponent_combinations(config):
     """
     all_strategies = config["opponents"]["training"]["available_strategies"]
     num_opps = config["opponents"]["training"]["num_opponents"]
+    num_samples = config["opponents"]["training"]["num_samples"]
 
     # Generate all possible subsets of size `num_opps`
-    opponent_combinations = list(itertools.combinations(all_strategies, num_opps))
+    all_combinations = list(itertools.combinations(all_strategies, num_opps))
 
-    return [list(combo) for combo in opponent_combinations]
+    # Ensure we don't sample more than possible combinations
+    num_samples = min(num_samples, len(all_combinations))
+
+    # Randomly sample `num_samples` unique combinations
+    sampled_combinations = random.sample(all_combinations, num_samples)
+
+    return [list(combo) for combo in sampled_combinations]
 
 def create_opponents(opponent_names, config):
     """
@@ -127,11 +134,14 @@ def run_all_experiments(config_name):
 
     for idx, (lr, optimizer, scheduler, gamma, opponent_list) in enumerate(param_combinations):
         actor_model = create_model(config["model"]["actor_model"], input_size, output_size, config["model"]["hidden_layers"])
-        learner = create_learner(config["training"]["learner_type"], actor_model, config["model"]["critic_model"], device, optimizer, lr, scheduler, {"gamma": gamma})
+        if config["training"]["learner_type"] == "policy_gradient":
+            learner = create_pg_learner(actor_model, device, optimizer, lr, scheduler, {"gamma": gamma})
+        elif config["training"]["learner_type"] == "actor_critic":
+            learner = create_ac_learner(actor_model, config["model"]["critic_model"], device, optimizer, lr, scheduler, {"gamma": gamma})
         opponent_mix = create_opponents(opponent_list, config)
-
         trainer = Trainer(env, learner, opponent_mix, k=config["training"]["k"])
-        trainer.train_MC(epochs=config["training"]["epochs"], num_games=config["training"]["num_games"], game_length=config["training"]["game_length"])
+        print(config["training"]["epochs"], config["training"]["game_length"], config["training"]["num_games"])
+        trainer.train_MC(int(config["training"]["epochs"]), int(config["training"]["game_length"]), int(config["training"]["num_games"]))
 
         # Save results
         opp_string = "_".join(opponent_list)  

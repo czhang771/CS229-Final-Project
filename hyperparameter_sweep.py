@@ -144,9 +144,9 @@ def sort_results(json_file, output_file="sorted_avg_score_hyperparameter_results
     ac_all = [(k, v) for k, v in data if k.startswith("AC_")]
 
     # Sort each category by avg_score (descending)
-    pg_mlp_sorted = sorted(pg_mlp, key=lambda x: x[1]["avg_score"])
-    pg_lstm_sorted = sorted(pg_lstm, key=lambda x: x[1]["avg_score"])
-    ac_sorted = sorted(ac_all, key=lambda x: x[1]["avg_score"])
+    pg_mlp_sorted = sorted(pg_mlp, key=lambda x: x[1]["avg_score"], reverse=True)
+    pg_lstm_sorted = sorted(pg_lstm, key=lambda x: x[1]["avg_score"], reverse=True)
+    ac_sorted = sorted(ac_all, key=lambda x: x[1]["avg_score"], reverse=True)
 
     # Convert sorted data back to dictionary format
     sorted_data = {

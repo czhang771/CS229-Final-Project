@@ -60,7 +60,7 @@ class PolicyGradientLearner(Learner):
     def __init__(self, model: Model, device: torch.device, optimizer_name: str, terminal: bool = True, param_dict = {}):
         super().__init__(model, device, optimizer_name, terminal, param_dict)
 
-    def loss(self, taus: list[Trajectory], gamma: float) -> torch.Tensor:
+    def loss(self, taus: list[Trajectory], gamma: float, entropy_coef: float = 0.0) -> torch.Tensor:
         # taus = list of trajectories
         losses = []
         all_Rt = []
@@ -85,6 +85,7 @@ class PolicyGradientLearner(Learner):
             # get logits, compute log probs, make sure properly batched
             logits = self.model(states, batched = True)
             log_probs = torch.log_softmax(logits, dim = 1)
+            probs = torch.softmax(logits, dim = 1)
             action_log_probs = torch.gather(log_probs, dim = 1, index = actions)
 
             gamma_prods = torch.tensor([gamma**i for i in range(len(actions))])
@@ -94,6 +95,9 @@ class PolicyGradientLearner(Learner):
             
             # compute policy 'loss' (multiply by -1 to do EV maximization)
             policy_loss = -1 * torch.sum(action_log_probs * A_t)
+            entropy = -1 * torch.sum(probs * log_probs, dim = 1)
+            # we want to maximize entropy
+            policy_loss = policy_loss - entropy_coef * entropy.mean()
             losses.append(policy_loss)
             # print(policy_loss)
         

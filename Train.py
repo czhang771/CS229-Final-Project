@@ -83,7 +83,7 @@ class Trainer:
         #print(f"Score: {score}")
         return score
     
-    def train_MC(self, epochs: int, game_length: int, num_games: int):
+    def train_MC(self, epochs: int, game_length: int, num_games: int, entropy_coef: float = 0.0):
         """Basic implementation of a train loop"""
         
         for i in range(epochs):
@@ -93,7 +93,7 @@ class Trainer:
             
             # update step
             self.learner.optimizer.zero_grad()
-            loss = self.learner.loss(trajectories, gamma = self.gamma)
+            loss = self.learner.loss(trajectories, gamma = self.gamma, entropy_coef = entropy_coef)
             loss.backward()
             self.learner.optimizer.step()
 
@@ -215,14 +215,15 @@ if __name__ == "__main__":
     k = 5
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     env = IPDEnvironment(payoff_matrix = PAYOFF_MATRIX, num_rounds=1000, k = k)
-    opponent = Strong() 
+    #opponent = Strong() 
+    opponent = TFT()
     
     # # POLICY GRADIENTS EXAMPLES
     # # learner = PolicyGradientLearner(LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS), device, "adam", terminal = False, param_dict = {"lr": 0.05})
     learner = PolicyGradientLearner(MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k]), device, "adamw", terminal = False, param_dict = {"lr": 0.01})
     # learner = PolicyGradientLearner(LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [8 * STATE_DIM, 4 * STATE_DIM]), device, "adamw", terminal = True, param_dict = {"lr": 0.01})
     trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99, random_threshold = 0.8, min_epsilon = 0.5)
-    trainer.train_MC(epochs = 1, num_games = 5, game_length = 20)
+    trainer.train_MC(epochs = 20, num_games = 5, game_length = 20, entropy_coef = 0.1)
     print(f"✅ Final Score for Agent: {env.payoff1}")
     print(f"✅ Final Score for Opponent: {env.payoff2}")
 

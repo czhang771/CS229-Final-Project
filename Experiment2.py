@@ -190,16 +190,16 @@ def run_all_experiments(config_name):
             model_path = f"{RESULTS_DIR}{save_name}.pth"
             torch.save(learner.model.state_dict(), model_path)
 
-        all_results[save_name] = {
-            "opponents": opponent_list,
-            "score_history": trainer.score_history[-1], # final epoch average score over rollouts
-            "loss_history": trainer.loss_history,
-            "model_path": model_path,
-            "steps_to_convergence": steps
-        }
-        print(all_results[save_name])
+            all_results[save_name] = {
+                "opponents": opponent_list,
+                "score_history": trainer.score_history[-1], # final epoch average score over rollouts
+                "loss_history": trainer.loss_history,
+                "model_path": model_path,
+                "steps_to_convergence": steps
+            }
+            print(all_results[save_name])
 
-        print(f"Finished experiment: {save_name}")
+            print(f"Finished experiment: {save_name}")
 
         json_filename = f"{RESULTS_DIR}{config['experiment_name']}_numOpp{num_opponents}.json"
         with open(json_filename, "w") as f:

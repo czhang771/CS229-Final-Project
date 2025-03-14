@@ -159,7 +159,8 @@ class Trainer:
                 for i in range(num_games):
                     # sampling loop
                     actions[i] = self.learner.act(states[i], epsilon = epsilon_t, random_threshold = self.random_threshold)
-                    action2 = self.opponent.act(states[i])
+                    #action2 = self.opponent.act(states[i])
+                    action2 = random.choice(self.opponent).act(states[i])
                     next_state, reward1, reward2 = envs[i].step(int(actions[i]), int(action2))
                     rewards[i] = reward1
                     next_states[i, :, :] = next_state

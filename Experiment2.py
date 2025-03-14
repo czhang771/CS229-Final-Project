@@ -8,7 +8,8 @@ from Model import MLP, LSTM, LogReg
 from Learner import PolicyGradientLearner, ActorCriticLearner
 from IPDEnvironment import IPDEnvironment
 from Strategy import *
-
+NUM_ACTIONS = 2
+STATE_DIM = 2
 PAYOFF_MATRIX = {
     (0, 0): (3, 3),
     (0, 1): (0, 5),
@@ -30,22 +31,21 @@ def create_pg_learner(actor_model, device, optimizer, lr, scheduler, scheduler_p
 
 
 
-def create_ac_learner(actor_model, critic_model_type, device, actor_optimizer, critic_optimizer, lr, scheduler, scheduler_params):
+def create_ac_learner(actor_model, critic_model_type, device, optimizer, actor_lr, critic_lr, scheduler, scheduler_params, k):
     """Creates the learner based on experiment config."""
-    param_dict = {"lr": lr, "scheduler_type": scheduler, "scheduler_params": scheduler_params}
-    critic_model = create_model(critic_model_type, actor_model.d_input, actor_model.d_output, actor_model.hidden_sizes)
-    return ActorCriticLearner(actor_model, critic_model, device, actor_optimizer, critic_optimizer, terminal=False, 
-                                  param_dict=param_dict)
+    critic_model = create_model(critic_model_type, k)
+    return ActorCriticLearner(actor_model, critic_model, device, optimizer, optimizer, terminal=False, 
+                                  param_dict={"actor": {"lr": actor_lr, "scheduler_type": scheduler, "scheduler_params": scheduler_params},
+                                                        "critic": {"lr": critic_lr, "scheduler_type": scheduler, "scheduler_params": scheduler_params}})
+
    
     
-def create_model(model_type, input_size, output_size, hidden_layers):
+def create_model(model_type, k):
     """Creates model based on config."""
     if model_type == "MLP":
-        return MLP(input_size, output_size, hidden_layers)
+        return MLP(STATE_DIM * k, NUM_ACTIONS, [4 * k, 4 *k])
     elif model_type == "LSTM":
-        return LSTM(input_size, output_size, hidden_layers)
-    elif model_type == "LogReg":
-        return LogReg(input_size, output_size)
+        return LSTM(STATE_DIM, NUM_ACTIONS, [8 * STATE_DIM, 4 * STATE_DIM])
     else:
         raise ValueError(f"Unsupported model type: {model_type}")
 
@@ -91,13 +91,17 @@ def create_opponents(opponent_names, config):
         "Random": Random(),
         "Cp": Cp(config["strategy_params"].get("Cp_p", 0.7)),  
         "TFT": TFT(),
-        "ImpTFT": ImpTFT(config["strategy_params"].get("ImpTFT_p", 0.95)),
+        "STFT": STFT(), 
         "GTFT": GTFT(
             R=config["strategy_params"].get("GTFT_R", 3),
             P=config["strategy_params"].get("GTFT_P", 1),
             T=config["strategy_params"].get("GTFT_T", 5),
             S=config["strategy_params"].get("GTFT_S", 0),
         ),
+        "GrdTFT": GrdTFT(),
+        "ImpTFT": ImpTFT(config["strategy_params"].get("ImpTFT_p", 0.95)),
+        "TFTT": TFTT(),
+        "TTFT": TTFT(),
         "GRIM": GRIM(),
         "WSLS": WSLS(),
     }
@@ -116,54 +120,69 @@ def run_all_experiments(config_name):
     config, config_filename = load_config(config_name)
     env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds=config["training"]["num_games"], k=config["training"]["k"])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    input_size = config["training"]["k"] * 2
-    output_size = 2  
+    k = config["training"]["k"]
 
     opponent_combinations = create_opponent_combinations(config)  
 
-    param_combinations = itertools.product(
-        config["hyperparameters"]["actor_lr"],
-        config["hyperparameters"]["critic_lr"],
-        config["hyperparameters"]["optimizers"],
-        config["hyperparameters"]["scheduler_types"],
-        config["hyperparameters"]["scheduler_params"]["gamma"],
-        opponent_combinations  
-    )
+    actor_model = create_model(config["model"]["actor_model"], k)
+    optimizer = config["hyperparameters"]["optimizers"]
+    scheduler = config["hyperparameters"]["scheduler_types"]
+    scheduler_params = config["hyperparameters"]["scheduler_params"]
+    
+    if config["training"]["learner_type"] == "policy_gradient":
+        learner = create_pg_learner(actor_model, device, optimizer, config["hyperparameters"]["actor_lr"], scheduler, scheduler_params)
+    elif config["training"]["learner_type"] == "actor_critic":
+        learner = create_ac_learner(
+            actor_model, config["model"]["critic_model"], device, optimizer,
+            config["hyperparameters"]["actor_lr"], config["hyperparameters"]["critic_lr"],
+            scheduler, scheduler_params, k
+        )
+
     
     all_results = {}
 
-    for idx, (alr, clr, optimizer, scheduler, gamma, opponent_list) in enumerate(param_combinations):
-        actor_model = create_model(config["model"]["actor_model"], input_size, output_size, config["model"]["hidden_layers"])
-        if config["training"]["learner_type"] == "policy_gradient":
-            learner = create_pg_learner(actor_model, device, optimizer, alr, scheduler, {"gamma": gamma})
-        elif config["training"]["learner_type"] == "actor_critic":
-            learner = create_ac_learner(actor_model, config["model"]["critic_model"], device, optimizer, lr, scheduler, {"gamma": gamma})
+    for idx, opponent_list in enumerate(opponent_combinations):
         opponent_mix = create_opponents(opponent_list, config)
-        trainer = Trainer(env, learner, opponent_mix, k=config["training"]["k"])
-        print(config["training"]["epochs"], config["training"]["game_length"], config["training"]["num_games"])
-        trainer.train_MC(int(config["training"]["epochs"]), int(config["training"]["game_length"]), int(config["training"]["num_games"]))
+        trainer = Trainer(env, learner, opponent_mix, k=config["training"]["k"], gamma=0.99)
+        opp_string = "_".join(opponent_list)  
+        print(opp_string)
+        
+        if config["training"]["learner_type"] == "policy_gradient":
+            """
+            trainer.train_MC(epochs=int(config["training"]["epochs"]),
+                             game_length=int(config["training"]["game_length"]),
+                             num_games=int(config["training"]["num_games"]),
+                             entropy_coef=0)
+            """
+            
+            #trainer.train_MC(int(config["training"]["epochs"]),int(config["training"]["game_length"]),int(config["training"]["num_games"]))
+        
+            trainer.train_MC(50, 20, 10)
+        elif config["training"]["learner_type"] == "actor_critic":
+            trainer.train_AC(epochs=int(config["training"]["epochs"]), 
+                             game_length=int(config["training"]["game_length"]),
+                            num_games=int(config["training"]["num_games"]), 
+                            batch_size=int(config["training"]["batch_size"]))
+
 
         # Save results
         opp_string = "_".join(opponent_list)  
-        save_name = f"{config['experiment_name']}_L{config['training']['learner_type']}_A{config['model']['actor_model']}_C{config['model']['critic_model']}_LR{lr}_OPT{optimizer}_SCH{scheduler}_OPP{opp_string}"
-       
+        save_name = f"{config['experiment_name']}_OPP{opp_string}"
+
         model_path = f"{RESULTS_DIR}/{save_name}.pth"
+
+        #saves model
         torch.save(learner.model.state_dict(), model_path)
 
         all_results[save_name] = {
-            "learner_type": config["training"]["learner_type"],
-            "learning_rate": lr,
-            "scheduler": scheduler,
-            "optimizer": optimizer,
-            "actor_model_type": config["model"]["actor_model"],
-            "critic_model_type": config["model"]["critic_model"],
             "opponents": opponent_list,
             "final_score": trainer.score_history[-1],
             "loss_history": trainer.loss_history,
             "model_path": model_path
         }
+
         print(f"Finished experiment: {save_name}")
+
     json_filename = f"{RESULTS_DIR}/{os.path.splitext(os.path.basename(config_filename))[0]}.json"
     with open(json_filename, "w") as f:
         json.dump(all_results, f, indent=4)
@@ -172,4 +191,4 @@ def run_all_experiments(config_name):
 
 
 if __name__ == "__main__":
-    run_all_experiments("config1.yaml")
+    run_all_experiments("AC.yaml")

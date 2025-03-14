@@ -15,7 +15,7 @@ def load_model(model_path):
     """Load model from path"""
     model_name = model_path.split('_')[1] # get model name
     if model_name == "LSTM":
-        model = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
+        model = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [8 * STATE_DIM, 4 * STATE_DIM])
     elif model_name == "MLP":
         model = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k])
     elif model_name == "LR":
@@ -36,6 +36,7 @@ def evaluate_model(results_stem, path, num_games, game_length):
     optimizer = config['hyperparameters']['optimizers']
     model = load_model(path)
     if results_stem.split('_')[0] == "AC":
+        # critic model doesn't matter
         model = Experiment2.create_ac_learner(model, config['model']['critic_model'], "cpu", optimizer, config['hyperparameters']['actor_lr'], config['hyperparameters']['critic_lr'], config['hyperparameters']['scheduler_types'], config['hyperparameters']['scheduler_params'], k)
     else:
         model = Experiment2.create_pg_learner(model, "cpu", optimizer, config['hyperparameters']['actor_lr'], config['hyperparameters']['scheduler_types'], config['hyperparameters']['scheduler_params'])
@@ -44,6 +45,7 @@ def evaluate_model(results_stem, path, num_games, game_length):
     # model = PolicyGradientLearner(MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k]), device = "cpu", optimizer_name = "adamw", param_dict = {"lr": 0.01})
     # model = Strategy.Cu()
     opponent = [Strategy.AdaptiveMemoryStrategy()]
+    # opponent = [Strategy.Strong()]
     env = IPDEnvironment(payoff_matrix = Train.PAYOFF_MATRIX, num_rounds = 100, k = k)
     trainer = Train.Trainer(env, model, opponent, k = k, gamma = 0.99, random_threshold = 0.5, min_epsilon = 0.1)
     scores = trainer.evaluate(game_length = game_length, num_games = num_games, verbose = False)
@@ -64,8 +66,8 @@ def evaluate_all_models(results_stem):
             # save to json
             print(new_results[result]['scores'])
         
-        json.dump(new_results, open(f"results/{results_stem}_evaluated.json", 'w'))
+        json.dump(new_results, open(f"results/{results_stem}_evaluated_llm.json", 'w'))
 
 if __name__ == "__main__":
     # print(evaluate_model(None, 20, 1))
-    evaluate_all_models("AC_MLP_LSTM")
+    evaluate_all_models("PG_LSTM")

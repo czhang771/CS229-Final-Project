@@ -4,25 +4,21 @@ import matplotlib.pyplot as plt
 import torch
 import numpy as np
 from typing import List, Dict, Tuple, Optional, Union
-import glob
-import re
 
 # global constants
 AGENT_TOPLINE = 61
 
 def load_results(results_base: str, 
                 num_opponents: int = 13, 
-                ext_string: str = '_numOpp{i}_CURRICULUMTrue.json',
+                ext_string: str = "_evaluated.json",
                 fields: Optional[List[str]] = None) -> Dict[str, Tuple[np.ndarray, np.ndarray]]:
     """
-    load results from json files, supporting two formats:
-    1. single file per n value: results/{results_base}_numOpp{i}.json
-    2. single file with all n values: results/{results_base}{ext_string}
+    load results from a single json file containing entries for various n values
     
     args:
-        results_base: base name of results files
-        num_opponents: number of opponents to load results for
-        ext_string: extension string format with {i} placeholder for opponent number
+        results_base: base name of results file
+        num_opponents: maximum number of opponents to consider
+        ext_string: extension string of the json file
         fields: list of fields to extract from results, defaults to ["steps_to_convergence", "score_history"]
     
     returns:
@@ -37,71 +33,44 @@ def load_results(results_base: str,
     for field in fields:
         results_dict[field] = (np.zeros(num_opponents), np.zeros(num_opponents))
     
-    # check if we have consolidated file
-    consolidated_filename = f"results/{results_base}{ext_string.format(i='*')}"
-    consolidated_files = glob.glob(consolidated_filename.replace('*', ''))
+    # load the single json file
+    filepath = f"results/{results_base}{ext_string}"
+    try:
+        consolidated_data = json.load(open(filepath))
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"error: could not load file {filepath}: {e}")
+        return results_dict
     
-    if consolidated_files:
-        # Case 1: We have a single consolidated file with all results
-        consolidated_data = json.load(open(consolidated_files[0]))
+    # group results by number of opponents
+    for i in range(1, num_opponents + 1):
+        # filter entries for this number of opponents
+        n_entries = {}
+        for key, data in consolidated_data.items():
+            # check if this entry is for the current number of opponents (i)
+            if f"_numOpp{i}_" in key or (isinstance(data.get('opponents', []), list) and len(data.get('opponents', [])) == i):
+                n_entries[key] = data
         
-        # Group results by number of opponents
-        for i in range(1, num_opponents + 1):
-            # Filter entries for this number of opponents
-            n_entries = {}
-            for key, data in consolidated_data.items():
-                # Look for numOpp in the key or in the 'opponents' field length
-                if f"_numOpp{i}_" in key or (isinstance(data.get('opponents', []), list) and len(data.get('opponents', [])) == i):
-                    n_entries[key] = data
+        if not n_entries:
+            # no entries found for this number of opponents
+            continue
             
-            if not n_entries:
-                continue
-                
-            # Calculate statistics for each field
-            for field in fields:
-                values = [entry[field] for entry in n_entries.values() if field in entry]
-                if values:
-                    results_dict[field][0][i-1] = np.mean(values)
-                    results_dict[field][1][i-1] = np.std(values)
-    else:
-        # Case 2: Separate file for each n value
-        for i in range(1, num_opponents + 1):
-            # Try different filename patterns
-            possible_files = [
-                f"results/{results_base}_numOpp{i}.json",
-                f"results/{results_base}_numOpp{i}_CURRICULUMTrue.json",
-                f"results/{results_base}{ext_string.format(i=i)}"
-            ]
-            
-            result_data = None
-            for filepath in possible_files:
-                try:
-                    result_data = json.load(open(filepath))
-                    break
-                except (FileNotFoundError, json.JSONDecodeError):
-                    continue
-            
-            if result_data is None:
-                print(f"warning: could not find results file for {results_base} with n={i}")
-                continue
-            
-            # Extract each requested field
-            for field in fields:
-                try:
-                    values = [result_data[key][field] for key in result_data if field in result_data[key]]
-                    if values:
-                        results_dict[field][0][i-1] = np.mean(values)
-                        results_dict[field][1][i-1] = np.std(values)
-                except (KeyError, TypeError):
-                    print(f"warning: could not extract field {field} for n={i}")
+        # calculate statistics for each field
+        for field in fields:
+            # extract values for this field from all entries with this n
+            values = [entry[field] for entry in n_entries.values() if field in entry]
+            if values:
+                # calculate mean and standard deviation
+                results_dict[field][0][i-1] = np.mean(values)
+                results_dict[field][1][i-1] = np.std(values)
     
     return results_dict
 
-def plot_experiment_results(experiment_configs: List[Dict],
+def plot_experiment_results(ax, experiment_configs: List[Dict],
                           title: str = "Experiment Results",
                           x_label: str = "number of opponents",
                           save_path: Optional[str] = None,
-                          shared_axis: bool = False) -> None:
+                          shared_axis: bool = False,
+                          show_legend: bool = False) -> None:
     """
     plot results from multiple experiments
     
@@ -109,7 +78,7 @@ def plot_experiment_results(experiment_configs: List[Dict],
         experiment_configs: list of experiment configuration dictionaries 
                            each with keys:
                            - 'results_base': base filename
-                           - 'ext_string': extension format string (optional)
+                           - 'ext_string': extension string (optional)
                            - 'fields': list of fields to plot (optional)
                            - 'labels': optional field labels for legend
                            - 'colors': optional colors for each field
@@ -119,9 +88,8 @@ def plot_experiment_results(experiment_configs: List[Dict],
         x_label: x-axis label
         save_path: path to save the figure, if None, figure is displayed
         shared_axis: whether to use a shared y-axis for all fields
+        show_legend: whether to show the legend on this plot
     """
-    fig, ax = plt.subplots(figsize=(10, 6))
-    
     # if we need separate axes for different metrics
     axes = [ax]
     if not shared_axis and any('secondary_axis' in config for config in experiment_configs):
@@ -130,7 +98,7 @@ def plot_experiment_results(experiment_configs: List[Dict],
     
     for config in experiment_configs:
         results_base = config['results_base']
-        ext_string = config.get('ext_string', '_numOpp{i}_CURRICULUMTrue.json')
+        ext_string = config.get('ext_string', "_evaluated.json")
         num_opponents = config.get('num_opponents', 13)
         fields = config.get('fields', ["steps_to_convergence", "score_history"])
         field_labels = config.get('labels', {})
@@ -151,14 +119,14 @@ def plot_experiment_results(experiment_configs: List[Dict],
             current_ax = axes[axis_idx]
             
             # get label and color for this field
-            label = f"{results_base}: {field_labels.get(field, field)}"
+            label = f"{field_labels.get(field, field)}"
             color = colors.get(field, None)
             
             # plot the line
             line = current_ax.plot(x, avg_values, label=label, color=color)
             
             # use the line color for consistency if no specific color was given
-            fill_color = color if color else line[0].get_color()
+            fill_color = color if color is not None else line[0].get_color()
             
             # plot the standard deviation band
             current_ax.fill_between(
@@ -176,56 +144,86 @@ def plot_experiment_results(experiment_configs: List[Dict],
                 elif len(axes) > 1:
                     axes[1].set_ylabel(config['y_label'].get('secondary', ''))
     
-    # set labels and title
-    plt.xlabel(x_label)
+    # set labels and title directly on the axis
+    ax.set_xlabel(x_label)
+    ax.set_title(title)
     
     # add legends to each axis with non-empty content
-    for ax_idx, current_ax in enumerate(axes):
-        handles, labels = current_ax.get_legend_handles_labels()
-        if handles:
-            loc = 'upper right' if ax_idx == 1 else 'upper left'
-            current_ax.legend(loc=loc)
-    
-    plt.title(title)
-    plt.tight_layout()
-    
-    # save or show
-    if save_path:
-        plt.savefig(save_path)
-    else:
-        plt.show()
+    if show_legend:
+        for ax_idx, current_ax in enumerate(axes):
+            handles, labels = current_ax.get_legend_handles_labels()
+            if handles:
+                loc = 'upper right' if ax_idx == 1 else 'upper right'
+                current_ax.legend(loc=loc)
 
 # example usage
 if __name__ == "__main__":
-    # example 1: single experiment with multiple metrics on different axes
-    # plot_experiment_results([
-    #     {
-    #         'results_base': "AC_MLP_MLP_more",
-    #         'fields': ["steps_to_convergence", "score_history"],
-    #         'labels': {
-    #             "steps_to_convergence": "steps to convergence",
-    #             "score_history": "average score"
-    #         },
-    #         'secondary_axis': {"score_history": True},
-    #         'y_label': {
-    #             'primary': 'steps to convergence',
-    #             'secondary': 'average score'
-    #         }
-    #     }
-    # ], title="AC_MLP_MLP_more, scheduled opponents")
-    
-    # # example 2: multiple experiments comparing steps to convergence
-    # plot_experiment_results([
-    #     {'results_base': "AC_MLP_MLP", 'fields': ["steps_to_convergence"]},
-    #     {'results_base': "AC_LR_LR", 'fields': ["steps_to_convergence"]},
-    #     {'results_base': "AC_MLP_LSTM", 'fields': ["steps_to_convergence"]}
-    # ], title="Comparison of Steps to Convergence", save_path="AC_steps_to_convergence.pdf")
-    
-    # example 3: custom extension string
-    plot_experiment_results([
-        {
-            'results_base': "AC_MLP_LSTM",
-            'ext_string': "_evaluated.json",
-            'fields': ["steps_to_convergence", "score_history", "scores"]
+    results = {
+        "PG_LogReg": {
+            "score": 28.5,
+            "steps": 30.5
+        },
+        "PG_MLP": {
+            "score": 29.9,
+            "steps": 32.9
+        },
+        "PG_LSTM": {
+            "score": 28.1,
+            "steps": 28.4
+        },
+        "AC_LR_LR": {
+            "score": 20.72,
+            "steps": 35.1
+        },
+        "AC_MLP_MLP": {
+            "score": 19.51,
+            "steps": 20.9
+        },
+        "AC_MLP_LSTM": {
+            "score": 19.22,
+            "steps": 29.6
         }
-    ])
+    }
+
+    # create a 2 x 3 plot (PG as the first row, AC as the second row)
+    fig, axs = plt.subplots(2, 3, figsize=(15, 10))
+    # make fonts bigger
+    plt.rcParams.update({'font.size': 16})
+    # Define the order of models to match 2x3 layout
+    pg_models = ["PG_LogReg", "PG_MLP", "PG_LSTM"]
+    ac_models = ["AC_LR_LR", "AC_MLP_MLP", "AC_MLP_LSTM"]
+    all_models = [pg_models, ac_models]
+    
+    for row_idx, model_row in enumerate(all_models):
+        for col_idx, key in enumerate(model_row):
+            # Determine if this is the top right plot (for legend)
+            is_top_right = (row_idx == 0 and col_idx == 2)
+            
+            plot_experiment_results(axs[row_idx, col_idx], [
+                {
+                    'results_base': key,
+                    'ext_string': "_evaluated.json",
+                    'fields': ["scores"],
+                    'labels': {"scores": "out-of-domain score"}
+                }
+            ], title=key, show_legend=is_top_right)
+            
+            # Add horizontal line with label
+            line = axs[row_idx, col_idx].axhline(results[key]["score"], color='black', linestyle='--')
+            
+            # Add label to horizontal line (only on top right for legend)
+            if is_top_right:
+                line.set_label("in-domain score")
+                axs[row_idx, col_idx].legend(loc='upper right')
+            
+            # Set y-axis bounds to be the same for all plots
+            axs[row_idx, col_idx].set_ylim(0, 50)
+    
+    # Ensure consistent formatting across all subplots
+    for ax in axs.flat:
+        ax.set_xlabel('n opponents')
+    
+    # Fix layout
+    plt.tight_layout()
+    #plt.show()
+    plt.savefig("all_results.pdf")

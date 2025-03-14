@@ -1,0 +1,92 @@
+{
+    "PG_LSTM_numOpp2_IDX0_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du"
+        ],
+        "score_history": 41.2,
+        "model_path": "results/PG_LSTM_numOpp2_IDX0_CURRICULUM.pth",
+        "steps_to_convergence": 25
+    },
+    "PG_LSTM_numOpp2_IDX1_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du"
+        ],
+        "score_history": 45.75,
+        "model_path": "results/PG_LSTM_numOpp2_IDX1_CURRICULUM.pth",
+        "steps_to_convergence": 34
+    },
+    "PG_LSTM_numOpp2_IDX2_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du"
+        ],
+        "score_history": 38.9,
+        "model_path": "results/PG_LSTM_numOpp2_IDX2_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "PG_LSTM_numOpp2_IDX3_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du"
+        ],
+        "score_history": 37.5,
+        "model_path": "results/PG_LSTM_numOpp2_IDX3_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "PG_LSTM_numOpp2_IDX4_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du"
+        ],
+        "score_history": 23.6,
+        "model_path": "results/PG_LSTM_numOpp2_IDX4_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "PG_LSTM_numOpp2_IDX5_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du"
+        ],
+        "score_history": 27.65,
+        "model_path": "results/PG_LSTM_numOpp2_IDX5_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "PG_LSTM_numOpp2_IDX6_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du"
+        ],
+        "score_history": 31.95,
+        "model_path": "results/PG_LSTM_numOpp2_IDX6_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "PG_LSTM_numOpp2_IDX7_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du"
+        ],
+        "score_history": 35.2,
+        "model_path": "results/PG_LSTM_numOpp2_IDX7_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "PG_LSTM_numOpp2_IDX8_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du"
+        ],
+        "score_history": 46.95,
+        "model_path": "results/PG_LSTM_numOpp2_IDX8_CURRICULUM.pth",
+        "steps_to_convergence": 39
+    },
+    "PG_LSTM_numOpp2_IDX9_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du"
+        ],
+        "score_history": 35.65,
+        "model_path": "results/PG_LSTM_numOpp2_IDX9_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    }
+}

@@ -265,7 +265,7 @@ class Strong(Strategy):
         prompt += "\nShould you cooperate (0) or defect (1)? You use the following strategy. First, remember this is an iterated game, so always defecting is not necessarily the best strategy. However, you should observe your opponent and exploit any overly cooperative patterns. You try to balance forgiveness and retaliation. You avoid *only* defecting. Respond with only '0' or '1'."
         # print(prompt)
         response = self.model.generate_text(prompt).strip()
-        # print(response)
+        print(response)
         if response == "0":
             return COOPERATE
         elif response == "1":

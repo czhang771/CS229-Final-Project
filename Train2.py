@@ -227,43 +227,10 @@ if __name__ == "__main__":
     k = 5
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    # POLICY GRADIENTS EXAMPLES
-    # agent_scores = []
-    # opponent_scores = []
-    # steps_to_convergence = []
-    # for i in range(10):
-    #     # set random seed
-    #     random.seed(i)
-    #     np.random.seed(i)
-    #     torch.manual_seed(i)
-        
-    #     env = IPDEnvironment(payoff_matrix = PAYOFF_MATRIX, num_rounds=1000, k = k)
-    #     #opponent = Strong() 
-    #     opponent = [AdaptiveMemoryStrategy()]
-    #     # learner = PolicyGradientLearner(LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS), device, "adam", terminal = False, param_dict = {"lr": 0.01, "scheduler_type": "exponential", "scheduler_params": {"gamma": 0.9}})
-    #     # learner = PolicyGradientLearner(MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k]), device, "adamw", terminal = False, param_dict = {"lr": 0.01, "scheduler_type": "exponential", "scheduler_params": {"gamma": 0.99}})
-    #     learner = PolicyGradientLearner(LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [8 * STATE_DIM, 4 * STATE_DIM]), device, "adamw", terminal = True, param_dict = {"lr": 0.01, "scheduler_type": "exponential", "scheduler_params": {"gamma": 0.99}})
-    #     trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99, random_threshold = 0.8, min_epsilon = 0.2)
-    #     steps = trainer.train_MC(epochs = 50, num_games = 20, game_length = 20, entropy_coef = 0.1)
-    #     print(f"✅ Final Score for Agent: {env.payoff1}")
-    #     print(f"✅ Final Score for Opponent: {env.payoff2}")
-    #     agent_scores.append(env.payoff1)
-    #     opponent_scores.append(env.payoff2)
-    #     steps_to_convergence.append(steps)
-    # print(f"✅ Final Score for Agent: {np.mean(agent_scores)}")
-    # #standard deviation
-    # print(f"✅ Standard Deviation for Agent: {np.std(agent_scores)}")
-    # print(f"✅ Final Score for Opponent: {np.mean(opponent_scores)}")
-    # print(f"✅ Standard Deviation for Opponent: {np.std(opponent_scores)}")
-    # print(f"✅ Steps to Convergence: {np.mean(steps_to_convergence)}")
-    # print(f"✅ Standard Deviation for Steps to Convergence: {np.std(steps_to_convergence)}")
-    # trainer.evaluate(game_length = 20, num_games = 10, eval_opponent = Du())
-
-    
-    # ACTOR-CRITIC EXAMPLES
-    agent_scores_ac = []
-    opponent_scores_ac = []
-    steps_to_convergence_ac = []
+    #POLICY GRADIENTS EXAMPLES
+    agent_scores = []
+    opponent_scores = []
+    steps_to_convergence = []
     for i in range(10):
         # set random seed
         random.seed(i)
@@ -271,52 +238,23 @@ if __name__ == "__main__":
         torch.manual_seed(i)
         
         env = IPDEnvironment(payoff_matrix = PAYOFF_MATRIX, num_rounds=1000, k = k)
-        #opponent = Strong()
+        #opponent = Strong() 
         opponent = [AdaptiveMemoryStrategy()]
-        
-        # actor = LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS)
-        #critic = LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS)
-        actor = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k])
-        # critic = MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [8 * k, 4 * k, 4 * k])
-        # actor = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
-        critic = LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [4 * STATE_DIM, 8 * STATE_DIM, 4 * STATE_DIM])
-        param_dict = {"actor": {"lr": 0.01, "scheduler_type":"exponential", "scheduler_params": {"gamma": 0.999}},
-                      "critic": {"lr": 0.005, "scheduler_type":"exponential", "scheduler_params": {"gamma": 0.999}}}
-        # IT REALLY WORKS A LOT BETTER IF THE THE CRITIC IS AN LSTM
-        # THE HYPERPARAMETER TUNING IS REALLY ANNOYING
-
-        # TODO:
-        # make LSTM only use actual history (not padding)
-        # figure out a better way than padding?
-
-        learner = ActorCriticLearner(actor, critic, device, 
-                                    actor_optimizer = "adamw", 
-                                    critic_optimizer = "adamw", 
-                                    terminal = True, 
-                                    param_dict = param_dict)
-        
-        trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99, random_threshold = 0.5, min_epsilon = 0.1)
-        
-        steps = trainer.train_AC(epochs = 50, game_length = 20, num_games = 20, batch_size = 10, entropy_coef = 0.1)
-        print(f"✅ Final Score for Agent (AC): {trainer.score_history[-1]}")
-        agent_scores_ac.append(trainer.score_history[-1])
-        steps_to_convergence_ac.append(steps)
+        # learner = PolicyGradientLearner(LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS), device, "adam", terminal = False, param_dict = {"lr": 0.01, "scheduler_type": "exponential", "scheduler_params": {"gamma": 0.9}})
+        # learner = PolicyGradientLearner(MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k]), device, "adamw", terminal = False, param_dict = {"lr": 0.01, "scheduler_type": "exponential", "scheduler_params": {"gamma": 0.99}})
+        learner = PolicyGradientLearner(LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [8 * STATE_DIM, 4 * STATE_DIM]), device, "adamw", terminal = True, param_dict = {"lr": 0.01, "scheduler_type": "exponential", "scheduler_params": {"gamma": 0.99}})
+        trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99, random_threshold = 0.8, min_epsilon = 0.2)
+        steps = trainer.train_MC(epochs = 50, num_games = 20, game_length = 20, entropy_coef = 0.1)
+        print(f"✅ Final Score for Agent: {env.payoff1}")
+        print(f"✅ Final Score for Opponent: {env.payoff2}")
+        agent_scores.append(env.payoff1)
+        opponent_scores.append(env.payoff2)
+        steps_to_convergence.append(steps)
     
-    print(f"✅ Final Score for Agent (AC): {np.mean(agent_scores_ac)}")
-    print(f"✅ Standard Deviation for Agent (AC): {np.std(agent_scores_ac)}")
-    print(f"✅ Steps to Convergence (AC): {np.mean(steps_to_convergence_ac)}")
-    print(f"✅ Standard Deviation for Steps to Convergence (AC): {np.std(steps_to_convergence_ac)}")
-    # print(trainer.evaluate(game_length = 20, num_games = 1, eval_opponent = Du()))
-    
-    # fig, ax = plt.subplots(3, 1)
-    # ax[0].set_title("Actor-Critic Training")
-    # # y axis labels
-    # ax[0].set_ylabel("avg. cum. reward")
-    # ax[1].set_ylabel("actor loss")
-    # ax[2].set_ylabel("critic loss")
-    # ax[0].plot(trainer.score_history, c = 'k')
-    # ax[1].plot([x[0] for x in trainer.loss_history], c = 'k')
-    # ax[2].plot([x[1] for x in trainer.loss_history], c = 'k')
-    # plt.tight_layout()
-    # #plt.savefig("ac_curve.pdf")
-    # plt.show()
+    print(f"✅ Final Score for Agent: {np.mean(agent_scores)}")
+    #standard deviation
+    print(f"✅ Standard Deviation for Agent: {np.std(agent_scores)}")
+    print(f"✅ Final Score for Opponent: {np.mean(opponent_scores)}")
+    print(f"✅ Standard Deviation for Opponent: {np.std(opponent_scores)}")
+    print(f"✅ Steps to Convergence: {np.mean(steps_to_convergence)}")
+    print(f"✅ Standard Deviation for Steps to Convergence: {np.std(steps_to_convergence)}")

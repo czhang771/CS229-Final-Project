@@ -208,4 +208,4 @@ def run_all_experiments(config_name):
         print(f"All results for {num_opponents} opponents saved to: {json_filename}")
 
 if __name__ == "__main__":
-    run_all_experiments("configs/AC_MLP_MLP.yaml")
+    run_all_experiments("configs/PG_LSTM.yaml")

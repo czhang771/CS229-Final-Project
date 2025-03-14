@@ -8,6 +8,7 @@ training:
   gamma: 0.99
   learner_type: "actor_critic"  # Options: policy_gradient, actor_critic
   batch_size: 10 # only needed for actor_critic
+  curriculum: false
 
 hyperparameters: 
   actor_lr: 0.01

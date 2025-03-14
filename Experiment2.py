@@ -137,10 +137,9 @@ def run_all_experiments(config_name):
 
     for num_opponents in range(1, 14):
         all_results = {}
-
-
+        print(num_opponents)
         opponent_combinations = create_opponent_combinations(config, num_opponents, curriculum)  
-
+        print(opponent_combinations)
         actor_model = create_model(config["model"]["actor_model"], k)
         optimizer = config["hyperparameters"]["optimizers"]
         scheduler = config["hyperparameters"]["scheduler_types"]
@@ -208,4 +207,4 @@ def run_all_experiments(config_name):
         print(f"All results for {num_opponents} opponents saved to: {json_filename}")
 
 if __name__ == "__main__":
-    run_all_experiments("AC.yaml")
+    run_all_experiments("AC_LogReg_LogReg.yaml")

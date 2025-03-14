@@ -7,24 +7,24 @@ training:
   k: 5
   gamma: 0.99
   learner_type: "policy_gradient"  # Options: policy_gradient, actor_critic
+  batch_size: 10 # only needed for actor_critic
 
-hyperparameters:
-  actor_lr: [0.001]
-  critic_lr: [0.001]
-  scheduler_types: ["exponential"]
-  scheduler_params: {"gamma": [0.9]}
-  optimizers: ["adamw"]
+hyperparameters: 
+  actor_lr: 0.001
+  critic_lr: 0.001
+  scheduler_types: "exponential"
+  scheduler_params: {"gamma": 0.9}
+  optimizers: "adamw"
 
 opponents:
   training: 
-    available_strategies: ["TFT", "Cu", "Du", "Random", "Cp", "ImpTFT", "GTFT", "GRIM", "WSLS"]
+    available_strategies: ["Cu", "Du", "Random", "Cp", "TFT", "STFT", "GTFT", "GrdTFT", "ImpTFT", "TFTT", "TTFT","GRIM", "WSLS"]
     num_opponents: 2
-    num_samples: 9 
+    num_samples: 13 
 
 model:
   actor_model: "MLP" # Options: MLP, LSTM, LogReg
   critic_model: None
-  hidden_layers: [20, 20]  # Only applicable for MLP
 
 strategy_params:
   Cp_p: 0.7        # Cp cooperates with probability 0.7

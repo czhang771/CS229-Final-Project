@@ -2,6 +2,7 @@ import numpy as np
 import random 
 from abc import ABC, abstractmethod
 from BaseLM import BaseLM
+import torch
 
 COOPERATE = 0
 DEFECT = 1
@@ -11,6 +12,8 @@ def is_first_round(state):
         return True, None
     
     last = state[-1][0]
+    if isinstance(last, torch.Tensor):
+        last = int(last.item())
     if last == 2:
         return True, None
     

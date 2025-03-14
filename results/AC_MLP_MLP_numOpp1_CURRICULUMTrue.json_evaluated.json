@@ -1,1 +1,0 @@
-{"AC_MLP_MLP_numOpp1_IDX0_CURRICULUM": {"opponents": ["Cu"], "score_history": 60.4, "model_path": "results/AC_MLP_MLP_numOpp1_IDX0_CURRICULUM.pth", "steps_to_convergence": 20, "scores": 4}}

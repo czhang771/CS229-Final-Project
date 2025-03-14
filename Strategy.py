@@ -54,7 +54,7 @@ class Du(Strategy):
 Cooperates with probability one-half.
 """
 class Random(Strategy):
-    def act(self, state):
+    def act(self, state, epsilon = 0.0, random_threshold = 0.8):
         return random.choice([COOPERATE, DEFECT])
 
 """
@@ -289,7 +289,7 @@ class AdaptiveMemoryStrategy(Strategy):
     5. Handles noise with a pattern recognition system
     """
     
-    def __init__(self, memory_depth=10, noise_tolerance=0.05, exploit_threshold=0.8):
+    def __init__(self, memory_depth=10, noise_tolerance=0.05, exploit_threshold=0.8,):
         # Configuration parameters
         self.memory_depth = memory_depth
         self.noise_tolerance = noise_tolerance
@@ -314,7 +314,7 @@ class AdaptiveMemoryStrategy(Strategy):
         # Initial state: cooperate on first move
         self.initial_action = COOPERATE
 
-    def act(self, state):
+    def act(self, state, epsilon = 0.0, random_threshold = 0.8):
         """
         Choose action based on game state.
         State format is a list of tuples (agent_action, opponent_action)

@@ -193,7 +193,6 @@ def run_all_experiments(config_name):
             all_results[save_name] = {
                 "opponents": opponent_list,
                 "score_history": trainer.score_history[-1], # final epoch average score over rollouts
-                "loss_history": trainer.loss_history,
                 "model_path": model_path,
                 "steps_to_convergence": steps
             }

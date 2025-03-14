@@ -42,10 +42,7 @@ class Trainer:
         # outer game loop; play many games per epoch
         for _ in range(num_games):
             self.env.reset()
-            if self.n_opponents == 1:
-                opponent = self.opponent
-            else:
-                opponent = random.choice(self.opponent)
+            opponent = random.choice(self.opponent)
             opponent.reset()
             
             # inner game loop; agents do not know game length

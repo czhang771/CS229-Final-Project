@@ -1,0 +1,36 @@
+experiment_name: "PG_LogReg"
+
+training:
+  epochs: 50
+  num_games: 20
+  game_length: 10
+  k: 5
+  gamma: 0.99
+  learner_type: "policy_gradient"  # Options: policy_gradient, actor_critic
+  batch_size: 10 # only needed for actor_critic
+  curriculum: false
+
+hyperparameters: 
+  actor_lr: 0.01
+  critic_lr: 0.001
+  scheduler_types: "exponential"
+  scheduler_params: {"gamma": 0.9}
+  optimizers: "adamw"
+
+opponents:
+  training: 
+    available_strategies: ["Cu", "Du", "Random", "Cp", "TFT", "STFT", "GTFT", "GrdTFT", "ImpTFT", "TFTT", "TTFT","GRIM", "WSLS"]
+    num_opponents: 2
+    num_samples: 13 
+
+model:
+  actor_model: "LogReg" # Options: MLP, LSTM, LogReg
+  critic_model: None
+
+strategy_params:
+  Cp_p: 0.7        # Cp cooperates with probability 0.7
+  ImpTFT_p: 0.85   # ImpTFT imitates opponent with probability 0.85
+  GTFT_R: 3        # GTFT Reward when both cooperate
+  GTFT_P: 1        # GTFT Punishment when both defect
+  GTFT_T: 5        # GTFT Temptation (defect while other cooperates)
+  GTFT_S: 0        # GTFT Sucker’s payoff (cooperate while other defects)

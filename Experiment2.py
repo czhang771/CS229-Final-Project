@@ -48,10 +48,12 @@ def create_model(model_type, k):
         return MLP(STATE_DIM * k, NUM_ACTIONS, [4 * k, 4 * k])
     elif model_type == "LSTM":
         return LSTM(STATE_DIM, NUM_ACTIONS, [8 * STATE_DIM, 4 * STATE_DIM])
+    elif model_type == "LogReg":
+        return LogReg(STATE_DIM * k, NUM_ACTIONS)
     else:
         raise ValueError(f"Unsupported model type: {model_type}")
 
-def create_opponent_combinations(config, curriculum = False):
+def create_opponent_combinations(config, num_opps, curriculum = False):
     """
     Generate all possible opponent sets of fixed size.
 
@@ -62,7 +64,7 @@ def create_opponent_combinations(config, curriculum = False):
         list[list[str]]: List of all possible opponent combinations.
     """
     all_strategies = config["opponents"]["training"]["available_strategies"]
-    num_opps = config["opponents"]["training"]["num_opponents"]
+    # num_opps = config["opponents"]["training"]["num_opponents"]
     num_samples = config["opponents"]["training"]["num_samples"]
 
     if not curriculum:
@@ -131,64 +133,62 @@ def run_all_experiments(config_name):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     k = config["training"]["k"]
     curriculum = config["training"]["curriculum"]
-
-    opponent_combinations = create_opponent_combinations(config, curriculum)  
-
-    actor_model = create_model(config["model"]["actor_model"], k)
-    optimizer = config["hyperparameters"]["optimizers"]
-    scheduler = config["hyperparameters"]["scheduler_types"]
-    scheduler_params = config["hyperparameters"]["scheduler_params"]
     
-    if config["training"]["learner_type"] == "policy_gradient":
-        learner = create_pg_learner(actor_model, device, optimizer, config["hyperparameters"]["actor_lr"], scheduler, scheduler_params)
-    elif config["training"]["learner_type"] == "actor_critic":
-        learner = create_ac_learner(
-            actor_model, config["model"]["critic_model"], device, optimizer,
-            config["hyperparameters"]["actor_lr"], config["hyperparameters"]["critic_lr"],
-            scheduler, scheduler_params, k
-        )
 
-    
-    all_results = {}
-
-    for idx, opponent_list in enumerate(opponent_combinations):
-        opponent_mix = create_opponents(opponent_list, config)
-        trainer = Trainer(env, learner, opponent_mix, k=config["training"]["k"], gamma=0.99, min_epsilon=0.2)
-        opp_string = "_".join(opponent_list)  
-        print(opp_string)
+    for num_opponents in range(1, 14):
+        all_results = {}
+        print(num_opponents)
+        opponent_combinations = create_opponent_combinations(config, num_opponents, curriculum)  
+        print(opponent_combinations)
+        actor_model = create_model(config["model"]["actor_model"], k)
+        optimizer = config["hyperparameters"]["optimizers"]
+        scheduler = config["hyperparameters"]["scheduler_types"]
+        scheduler_params = config["hyperparameters"]["scheduler_params"]
         
-        steps = 0
         if config["training"]["learner_type"] == "policy_gradient":
-            """
-            trainer.train_MC(epochs=int(config["training"]["epochs"]),
-                             game_length=int(config["training"]["game_length"]),
-                             num_games=int(config["training"]["num_games"]),
-                             entropy_coef=0)
-            """
-            
-            steps = trainer.train_MC(int(config["training"]["epochs"]),
-                             int(config["training"]["game_length"]),
-                             int(config["training"]["num_games"]))
-        
-            # trainer.train_MC(epochs=50, num_games=20, game_length=10, entropy_coef=0.1)
+            learner = create_pg_learner(actor_model, device, optimizer, config["hyperparameters"]["actor_lr"], scheduler, scheduler_params)
         elif config["training"]["learner_type"] == "actor_critic":
-            steps = trainer.train_AC(epochs=int(config["training"]["epochs"]), 
-                             game_length=int(config["training"]["game_length"]),
-                            num_games=int(config["training"]["num_games"]), 
-                            batch_size=int(config["training"]["batch_size"]))
+            learner = create_ac_learner(
+                actor_model, config["model"]["critic_model"], device, optimizer,
+                config["hyperparameters"]["actor_lr"], config["hyperparameters"]["critic_lr"],
+                scheduler, scheduler_params, k
+            )
 
-
-        # Save results
-        if not curriculum:
+        for idx, opponent_list in enumerate(opponent_combinations):
+            opponent_mix = create_opponents(opponent_list, config)
+            trainer = Trainer(env, learner, opponent_mix, k=config["training"]["k"], gamma=0.99, min_epsilon=0.2)
             opp_string = "_".join(opponent_list)  
-            save_name = f"{config['experiment_name']}_OPP{opp_string}"
-            model_path = f"{RESULTS_DIR}/{save_name}.pth"
-        else:
-            n = config["training"]["num_opponents"]
-            model_path = f"{RESULTS_DIR}/{config['experiment_name']}_{n}_{idx}_CURRICULUM.pth"
+            print(opp_string)
+            
+            steps = 0
+            if config["training"]["learner_type"] == "policy_gradient":
+                """
+                trainer.train_MC(epochs=int(config["training"]["epochs"]),
+                                game_length=int(config["training"]["game_length"]),
+                                num_games=int(config["training"]["num_games"]),
+                                entropy_coef=0)
+                """
+                
+                steps = trainer.train_MC(int(config["training"]["epochs"]),
+                                int(config["training"]["game_length"]),
+                                int(config["training"]["num_games"]))
+            
+                # trainer.train_MC(epochs=50, num_games=20, game_length=10, entropy_coef=0.1)
+            elif config["training"]["learner_type"] == "actor_critic":
+                steps = trainer.train_AC(epochs=int(config["training"]["epochs"]), 
+                                game_length=int(config["training"]["game_length"]),
+                                num_games=int(config["training"]["num_games"]), 
+                                batch_size=int(config["training"]["batch_size"]))
 
-        # saves model
-        torch.save(learner.model.state_dict(), model_path)
+
+            # Save results
+            if curriculum:
+                save_name = f"{config['experiment_name']}_numOpp{num_opponents}_IDX{idx}_CURRICULUM"
+            else:
+                save_name = f"{config['experiment_name']}_OPP{opp_string}"
+
+            model_path = f"{RESULTS_DIR}/{save_name}.pth"
+            torch.save(learner.model.state_dict(), model_path)
 
         all_results[save_name] = {
             "opponents": opponent_list,
@@ -198,14 +198,13 @@ def run_all_experiments(config_name):
             "steps_to_convergence": steps
         }
 
-        print(f"Finished experiment: {save_name}")
+            print(f"Finished experiment: {save_name}")
 
-    json_filename = f"{RESULTS_DIR}/{os.path.splitext(os.path.basename(config_filename))[0]}.json"
-    with open(json_filename, "w") as f:
-        json.dump(all_results, f, indent=4)
+        json_filename = f"{RESULTS_DIR}/{config['experiment_name']}_numOpp{num_opponents}.json"
+        with open(json_filename, "w") as f:
+            json.dump(all_results, f, indent=4)
 
-    print(f"All experiment metadata saved to: {json_filename}")
-
+        print(f"All results for {num_opponents} opponents saved to: {json_filename}")
 
 if __name__ == "__main__":
-    run_all_experiments("AC.yaml")
+    run_all_experiments("AC_LogReg_LogReg.yaml")

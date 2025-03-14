@@ -30,12 +30,12 @@ def create_pg_learner(actor_model, device, optimizer, lr, scheduler, scheduler_p
 
 
 
-def create_ac_learner(actor_model, critic_model_type, device, optimizer, lr, scheduler, scheduler_params):
+def create_ac_learner(actor_model, critic_model_type, device, actor_optimizer, critic_optimizer, lr, scheduler, scheduler_params):
     """Creates the learner based on experiment config."""
     param_dict = {"lr": lr, "scheduler_type": scheduler, "scheduler_params": scheduler_params}
     critic_model = create_model(critic_model_type, actor_model.d_input, actor_model.d_output, actor_model.hidden_sizes)
-    return ActorCriticLearner(actor_model, critic_model, device, optimizer, optimizer, terminal=False, 
-                                  param_dict={"actor": param_dict, "critic": param_dict})
+    return ActorCriticLearner(actor_model, critic_model, device, actor_optimizer, critic_optimizer, terminal=False, 
+                                  param_dict=param_dict)
    
     
 def create_model(model_type, input_size, output_size, hidden_layers):

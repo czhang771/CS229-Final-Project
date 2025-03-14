@@ -85,8 +85,13 @@ class Trainer:
     
     def train_MC(self, epochs: int, game_length: int, num_games: int, entropy_coef: float = 0.0):
         """Basic implementation of a train loop"""
-        
+        i = 0
+        window_size = 3
+        reward_threshold = 0.01 * PAYOFF_MATRIX[COOPERATE, COOPERATE] * game_length
         for i in range(epochs):
+            if i > window_size and (np.mean(self.score_history[-window_size:]) - 
+                      np.mean(self.score_history[-2*window_size:-window_size])) < reward_threshold:
+                break
             # do rollouts
             epsilon_t = min(self.min_epsilon, 1.0 - i / epochs)
             trajectories = self.rollout(game_length, num_games, epsilon_t = epsilon_t)
@@ -100,13 +105,17 @@ class Trainer:
             # logging
             self.score_history.append(sum([t.my_payoff for t in trajectories]) / len(trajectories)) 
             self.loss_history.append(loss.item())
-            #if i % 1 == 0:
-                #print(f"Epoch {i}, score: {self.score_history[-1]}, loss: {self.loss_history[-1]}")
+            if i % 1 == 0:
+                print(f"Epoch {i}, score: {self.score_history[-1]}, loss: {self.loss_history[-1]}")
 
     def train_AC(self, epochs: int, game_length: int, num_games: int, batch_size: int = 5):
         """Train using actor-critic"""
-
+        window_size = 3
+        reward_threshold = 0.01 * PAYOFF_MATRIX[COOPERATE, COOPERATE] * game_length
         for i in range(epochs):
+            if i > window_size and (np.mean(self.score_history[-window_size:]) - 
+                      np.mean(self.score_history[-2*window_size:-window_size])) < reward_threshold:
+                break
             epsilon_t = min(0.1, 1.0 - i / epochs)
             if batch_size > game_length:
                 raise ValueError("Batch size must be less than game length")
@@ -115,8 +124,8 @@ class Trainer:
             self.learner.actor_optimizer.scheduler_step()
             self.learner.critic_optimizer.scheduler_step()
 
-            #if i % 1 == 0:
-                #print(f"Epoch {i}, score: {self.score_history[-1]}, actor loss: {self.loss_history[-1][0]}, critic loss: {self.loss_history[-1][1]}")
+            if i % 1 == 0:
+                print(f"Epoch {i}, score: {self.score_history[-1]}, actor loss: {self.loss_history[-1][0]}, critic loss: {self.loss_history[-1][1]}")
 
     def train_AC_batch(self, game_length: int, num_games: int, batch_size: int, epsilon_t = 1.0):
         # (inefficient) parallel environments
@@ -197,7 +206,7 @@ class Trainer:
         self.score_history.append(sum([t.my_payoff for t in trajectories]) / len(trajectories))
         self.loss_history.append((actor_loss.item(), critic_loss.item()))
 
-        return trajectories
+        return critic_loss.item(), actor_loss.item(), trajectories
 
     def load(self, path: str):
         self.learner.model.load_state_dict(torch.load(path))

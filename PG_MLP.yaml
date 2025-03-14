@@ -1,4 +1,4 @@
-experiment_name: "hyperparam_test"
+experiment_name: "PG_MLP"
 
 training:
   epochs: 50
@@ -6,11 +6,11 @@ training:
   game_length: 10
   k: 5
   gamma: 0.99
-  learner_type: "actor_critic"  # Options: policy_gradient, actor_critic
+  learner_type: "policy_gradient"  # Options: policy_gradient, actor_critic
   batch_size: 10 # only needed for actor_critic
 
 hyperparameters: 
-  actor_lr: 0.001
+  actor_lr: 0.01
   critic_lr: 0.001
   scheduler_types: "exponential"
   scheduler_params: {"gamma": 0.9}
@@ -23,8 +23,8 @@ opponents:
     num_samples: 13 
 
 model:
-  actor_model: "MLP" # Options: MLP, LSTM
-  critic_model: "LSTM"
+  actor_model: "MLP" # Options: MLP, LSTM, LogReg
+  critic_model: None
 
 strategy_params:
   Cp_p: 0.7        # Cp cooperates with probability 0.7

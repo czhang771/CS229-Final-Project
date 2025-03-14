@@ -1,0 +1,35 @@
+experiment_name: "AC_MLP_LSTM"
+
+training:
+  epochs: 50
+  num_games: 20
+  game_length: 10
+  k: 5
+  gamma: 0.99
+  learner_type: "actor_critic"  # Options: policy_gradient, actor_critic
+  batch_size: 10 # only needed for actor_critic
+
+hyperparameters: 
+  actor_lr: 0.01
+  critic_lr: 0.005
+  scheduler_types: "exponential"
+  scheduler_params: {"gamma": 0.999}
+  optimizers: "adamw"
+
+opponents:
+  training: 
+    available_strategies: ["Cu", "Du", "Random", "Cp", "TFT", "STFT", "GTFT", "GrdTFT", "ImpTFT", "TFTT", "TTFT","GRIM", "WSLS"]
+    num_opponents: 2
+    num_samples: 13 
+
+model:
+  actor_model: "MLP" # Options: MLP, LSTM
+  critic_model: "MLP"
+
+strategy_params:
+  Cp_p: 0.7        # Cp cooperates with probability 0.7
+  ImpTFT_p: 0.85   # ImpTFT imitates opponent with probability 0.85
+  GTFT_R: 3        # GTFT Reward when both cooperate
+  GTFT_P: 1        # GTFT Punishment when both defect
+  GTFT_T: 5        # GTFT Temptation (defect while other cooperates)
+  GTFT_S: 0        # GTFT Sucker’s payoff (cooperate while other defects)

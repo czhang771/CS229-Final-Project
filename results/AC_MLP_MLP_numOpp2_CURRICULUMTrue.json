@@ -1,0 +1,92 @@
+{
+    "AC_MLP_MLP_numOpp2_IDX0_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du"
+        ],
+        "score_history": 19.05,
+        "model_path": "results/AC_MLP_MLP_numOpp2_IDX0_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_MLP_numOpp2_IDX1_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du"
+        ],
+        "score_history": 27.7,
+        "model_path": "results/AC_MLP_MLP_numOpp2_IDX1_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_MLP_numOpp2_IDX2_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du"
+        ],
+        "score_history": 25.05,
+        "model_path": "results/AC_MLP_MLP_numOpp2_IDX2_CURRICULUM.pth",
+        "steps_to_convergence": 24
+    },
+    "AC_MLP_MLP_numOpp2_IDX3_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du"
+        ],
+        "score_history": 15.95,
+        "model_path": "results/AC_MLP_MLP_numOpp2_IDX3_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_MLP_numOpp2_IDX4_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du"
+        ],
+        "score_history": 20.7,
+        "model_path": "results/AC_MLP_MLP_numOpp2_IDX4_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_MLP_numOpp2_IDX5_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du"
+        ],
+        "score_history": 25.45,
+        "model_path": "results/AC_MLP_MLP_numOpp2_IDX5_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_MLP_numOpp2_IDX6_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du"
+        ],
+        "score_history": 20.7,
+        "model_path": "results/AC_MLP_MLP_numOpp2_IDX6_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_MLP_numOpp2_IDX7_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du"
+        ],
+        "score_history": 16.25,
+        "model_path": "results/AC_MLP_MLP_numOpp2_IDX7_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_MLP_numOpp2_IDX8_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du"
+        ],
+        "score_history": 18.25,
+        "model_path": "results/AC_MLP_MLP_numOpp2_IDX8_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_MLP_numOpp2_IDX9_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du"
+        ],
+        "score_history": 29.95,
+        "model_path": "results/AC_MLP_MLP_numOpp2_IDX9_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    }
+}

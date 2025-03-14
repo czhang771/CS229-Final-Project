@@ -1,0 +1,112 @@
+{
+    "AC_MLP_LSTM_numOpp4_IDX0_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp"
+        ],
+        "score_history": 71.3,
+        "model_path": "results/AC_MLP_LSTM_numOpp4_IDX0_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_LSTM_numOpp4_IDX1_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp"
+        ],
+        "score_history": 69.75,
+        "model_path": "results/AC_MLP_LSTM_numOpp4_IDX1_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_LSTM_numOpp4_IDX2_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp"
+        ],
+        "score_history": 56.0,
+        "model_path": "results/AC_MLP_LSTM_numOpp4_IDX2_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_LSTM_numOpp4_IDX3_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp"
+        ],
+        "score_history": 66.35,
+        "model_path": "results/AC_MLP_LSTM_numOpp4_IDX3_CURRICULUM.pth",
+        "steps_to_convergence": 42
+    },
+    "AC_MLP_LSTM_numOpp4_IDX4_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp"
+        ],
+        "score_history": 58.8,
+        "model_path": "results/AC_MLP_LSTM_numOpp4_IDX4_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_LSTM_numOpp4_IDX5_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp"
+        ],
+        "score_history": 62.35,
+        "model_path": "results/AC_MLP_LSTM_numOpp4_IDX5_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_LSTM_numOpp4_IDX6_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp"
+        ],
+        "score_history": 65.6,
+        "model_path": "results/AC_MLP_LSTM_numOpp4_IDX6_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_LSTM_numOpp4_IDX7_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp"
+        ],
+        "score_history": 65.0,
+        "model_path": "results/AC_MLP_LSTM_numOpp4_IDX7_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_LSTM_numOpp4_IDX8_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp"
+        ],
+        "score_history": 58.8,
+        "model_path": "results/AC_MLP_LSTM_numOpp4_IDX8_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_LSTM_numOpp4_IDX9_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp"
+        ],
+        "score_history": 72.3,
+        "model_path": "results/AC_MLP_LSTM_numOpp4_IDX9_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    }
+}

@@ -1,0 +1,142 @@
+{
+    "AC_MLP_LSTM_numOpp7_IDX0_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp",
+            "TFT",
+            "STFT",
+            "GTFT"
+        ],
+        "score_history": 57.1,
+        "model_path": "results/AC_MLP_LSTM_numOpp7_IDX0_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_LSTM_numOpp7_IDX1_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp",
+            "TFT",
+            "STFT",
+            "GTFT"
+        ],
+        "score_history": 61.05,
+        "model_path": "results/AC_MLP_LSTM_numOpp7_IDX1_CURRICULUM.pth",
+        "steps_to_convergence": 12
+    },
+    "AC_MLP_LSTM_numOpp7_IDX2_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp",
+            "TFT",
+            "STFT",
+            "GTFT"
+        ],
+        "score_history": 41.2,
+        "model_path": "results/AC_MLP_LSTM_numOpp7_IDX2_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_LSTM_numOpp7_IDX3_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp",
+            "TFT",
+            "STFT",
+            "GTFT"
+        ],
+        "score_history": 44.0,
+        "model_path": "results/AC_MLP_LSTM_numOpp7_IDX3_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_LSTM_numOpp7_IDX4_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp",
+            "TFT",
+            "STFT",
+            "GTFT"
+        ],
+        "score_history": 33.45,
+        "model_path": "results/AC_MLP_LSTM_numOpp7_IDX4_CURRICULUM.pth",
+        "steps_to_convergence": 17
+    },
+    "AC_MLP_LSTM_numOpp7_IDX5_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp",
+            "TFT",
+            "STFT",
+            "GTFT"
+        ],
+        "score_history": 40.35,
+        "model_path": "results/AC_MLP_LSTM_numOpp7_IDX5_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_LSTM_numOpp7_IDX6_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp",
+            "TFT",
+            "STFT",
+            "GTFT"
+        ],
+        "score_history": 45.6,
+        "model_path": "results/AC_MLP_LSTM_numOpp7_IDX6_CURRICULUM.pth",
+        "steps_to_convergence": 45
+    },
+    "AC_MLP_LSTM_numOpp7_IDX7_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp",
+            "TFT",
+            "STFT",
+            "GTFT"
+        ],
+        "score_history": 53.15,
+        "model_path": "results/AC_MLP_LSTM_numOpp7_IDX7_CURRICULUM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_MLP_LSTM_numOpp7_IDX8_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp",
+            "TFT",
+            "STFT",
+            "GTFT"
+        ],
+        "score_history": 46.25,
+        "model_path": "results/AC_MLP_LSTM_numOpp7_IDX8_CURRICULUM.pth",
+        "steps_to_convergence": 31
+    },
+    "AC_MLP_LSTM_numOpp7_IDX9_CURRICULUM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp",
+            "TFT",
+            "STFT",
+            "GTFT"
+        ],
+        "score_history": 52.3,
+        "model_path": "results/AC_MLP_LSTM_numOpp7_IDX9_CURRICULUM.pth",
+        "steps_to_convergence": 30
+    }
+}

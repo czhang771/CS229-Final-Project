@@ -41,5 +41,6 @@ def evaluate_all_models(results_path):
     
     for result in results:
         result['scores'] = evaluate_model(path =result['model_path'], num_games = 1, game_length = result['game_length'])
-    
+        # save to json
+        json.dump(result, open(results_path + '_evaluated.json', 'w'))
     json.dump(results, open(results_path + '_evaluated.json', 'w'))

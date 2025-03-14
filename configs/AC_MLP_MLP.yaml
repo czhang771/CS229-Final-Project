@@ -1,4 +1,4 @@
-experiment_name: "AC_MLP_LSTM"
+experiment_name: "AC_MLP_MLP"
 
 training:
   epochs: 50

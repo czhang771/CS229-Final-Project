@@ -6,9 +6,9 @@
             "Random",
             "Cp"
         ],
-        "score_history": 17.7,
+        "score_history": 33.75,
         "model_path": "results/AC_MLP_MLP_numOpp4_IDX0_CURRICULUM.pth",
-        "steps_to_convergence": 29
+        "steps_to_convergence": 8
     },
     "AC_MLP_MLP_numOpp4_IDX1_CURRICULUM": {
         "opponents": [
@@ -17,7 +17,7 @@
             "Random",
             "Cp"
         ],
-        "score_history": 17.0,
+        "score_history": 35.65,
         "model_path": "results/AC_MLP_MLP_numOpp4_IDX1_CURRICULUM.pth",
         "steps_to_convergence": 49
     },
@@ -28,9 +28,9 @@
             "Random",
             "Cp"
         ],
-        "score_history": 22.2,
+        "score_history": 34.4,
         "model_path": "results/AC_MLP_MLP_numOpp4_IDX2_CURRICULUM.pth",
-        "steps_to_convergence": 22
+        "steps_to_convergence": 49
     },
     "AC_MLP_MLP_numOpp4_IDX3_CURRICULUM": {
         "opponents": [
@@ -39,7 +39,7 @@
             "Random",
             "Cp"
         ],
-        "score_history": 16.3,
+        "score_history": 36.85,
         "model_path": "results/AC_MLP_MLP_numOpp4_IDX3_CURRICULUM.pth",
         "steps_to_convergence": 49
     },
@@ -50,7 +50,7 @@
             "Random",
             "Cp"
         ],
-        "score_history": 18.85,
+        "score_history": 40.1,
         "model_path": "results/AC_MLP_MLP_numOpp4_IDX4_CURRICULUM.pth",
         "steps_to_convergence": 49
     },
@@ -61,7 +61,7 @@
             "Random",
             "Cp"
         ],
-        "score_history": 21.55,
+        "score_history": 42.4,
         "model_path": "results/AC_MLP_MLP_numOpp4_IDX5_CURRICULUM.pth",
         "steps_to_convergence": 49
     },
@@ -72,7 +72,7 @@
             "Random",
             "Cp"
         ],
-        "score_history": 17.75,
+        "score_history": 39.6,
         "model_path": "results/AC_MLP_MLP_numOpp4_IDX6_CURRICULUM.pth",
         "steps_to_convergence": 49
     },
@@ -83,7 +83,7 @@
             "Random",
             "Cp"
         ],
-        "score_history": 15.85,
+        "score_history": 49.95,
         "model_path": "results/AC_MLP_MLP_numOpp4_IDX7_CURRICULUM.pth",
         "steps_to_convergence": 49
     },
@@ -94,7 +94,7 @@
             "Random",
             "Cp"
         ],
-        "score_history": 17.5,
+        "score_history": 53.9,
         "model_path": "results/AC_MLP_MLP_numOpp4_IDX8_CURRICULUM.pth",
         "steps_to_convergence": 49
     },
@@ -105,7 +105,7 @@
             "Random",
             "Cp"
         ],
-        "score_history": 17.85,
+        "score_history": 49.15,
         "model_path": "results/AC_MLP_MLP_numOpp4_IDX9_CURRICULUM.pth",
         "steps_to_convergence": 49
     }

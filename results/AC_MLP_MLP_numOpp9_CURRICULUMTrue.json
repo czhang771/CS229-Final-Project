@@ -11,9 +11,9 @@
             "GrdTFT",
             "ImpTFT"
         ],
-        "score_history": 25.35,
+        "score_history": 45.15,
         "model_path": "results/AC_MLP_MLP_numOpp9_IDX0_CURRICULUM.pth",
-        "steps_to_convergence": 16
+        "steps_to_convergence": 13
     },
     "AC_MLP_MLP_numOpp9_IDX1_CURRICULUM": {
         "opponents": [
@@ -27,9 +27,9 @@
             "GrdTFT",
             "ImpTFT"
         ],
-        "score_history": 24.85,
+        "score_history": 48.1,
         "model_path": "results/AC_MLP_MLP_numOpp9_IDX1_CURRICULUM.pth",
-        "steps_to_convergence": 12
+        "steps_to_convergence": 31
     },
     "AC_MLP_MLP_numOpp9_IDX2_CURRICULUM": {
         "opponents": [
@@ -43,7 +43,7 @@
             "GrdTFT",
             "ImpTFT"
         ],
-        "score_history": 24.6,
+        "score_history": 44.2,
         "model_path": "results/AC_MLP_MLP_numOpp9_IDX2_CURRICULUM.pth",
         "steps_to_convergence": 49
     },
@@ -59,9 +59,9 @@
             "GrdTFT",
             "ImpTFT"
         ],
-        "score_history": 22.85,
+        "score_history": 37.65,
         "model_path": "results/AC_MLP_MLP_numOpp9_IDX3_CURRICULUM.pth",
-        "steps_to_convergence": 12
+        "steps_to_convergence": 49
     },
     "AC_MLP_MLP_numOpp9_IDX4_CURRICULUM": {
         "opponents": [
@@ -75,9 +75,9 @@
             "GrdTFT",
             "ImpTFT"
         ],
-        "score_history": 21.45,
+        "score_history": 51.5,
         "model_path": "results/AC_MLP_MLP_numOpp9_IDX4_CURRICULUM.pth",
-        "steps_to_convergence": 49
+        "steps_to_convergence": 28
     },
     "AC_MLP_MLP_numOpp9_IDX5_CURRICULUM": {
         "opponents": [
@@ -91,9 +91,9 @@
             "GrdTFT",
             "ImpTFT"
         ],
-        "score_history": 23.9,
+        "score_history": 49.1,
         "model_path": "results/AC_MLP_MLP_numOpp9_IDX5_CURRICULUM.pth",
-        "steps_to_convergence": 49
+        "steps_to_convergence": 31
     },
     "AC_MLP_MLP_numOpp9_IDX6_CURRICULUM": {
         "opponents": [
@@ -107,9 +107,9 @@
             "GrdTFT",
             "ImpTFT"
         ],
-        "score_history": 21.7,
+        "score_history": 51.5,
         "model_path": "results/AC_MLP_MLP_numOpp9_IDX6_CURRICULUM.pth",
-        "steps_to_convergence": 35
+        "steps_to_convergence": 49
     },
     "AC_MLP_MLP_numOpp9_IDX7_CURRICULUM": {
         "opponents": [
@@ -123,9 +123,9 @@
             "GrdTFT",
             "ImpTFT"
         ],
-        "score_history": 20.2,
+        "score_history": 46.4,
         "model_path": "results/AC_MLP_MLP_numOpp9_IDX7_CURRICULUM.pth",
-        "steps_to_convergence": 9
+        "steps_to_convergence": 49
     },
     "AC_MLP_MLP_numOpp9_IDX8_CURRICULUM": {
         "opponents": [
@@ -139,7 +139,7 @@
             "GrdTFT",
             "ImpTFT"
         ],
-        "score_history": 26.15,
+        "score_history": 49.35,
         "model_path": "results/AC_MLP_MLP_numOpp9_IDX8_CURRICULUM.pth",
         "steps_to_convergence": 49
     },
@@ -155,8 +155,8 @@
             "GrdTFT",
             "ImpTFT"
         ],
-        "score_history": 20.8,
+        "score_history": 34.7,
         "model_path": "results/AC_MLP_MLP_numOpp9_IDX9_CURRICULUM.pth",
-        "steps_to_convergence": 49
+        "steps_to_convergence": 48
     }
 }

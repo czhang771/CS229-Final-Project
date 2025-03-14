@@ -14,9 +14,9 @@
             "TTFT",
             "GRIM"
         ],
-        "score_history": 24.5,
+        "score_history": 46.05,
         "model_path": "results/AC_MLP_MLP_numOpp12_IDX0_CURRICULUM.pth",
-        "steps_to_convergence": 13
+        "steps_to_convergence": 11
     },
     "AC_MLP_MLP_numOpp12_IDX1_CURRICULUM": {
         "opponents": [
@@ -33,9 +33,9 @@
             "TTFT",
             "GRIM"
         ],
-        "score_history": 18.8,
+        "score_history": 45.75,
         "model_path": "results/AC_MLP_MLP_numOpp12_IDX1_CURRICULUM.pth",
-        "steps_to_convergence": 7
+        "steps_to_convergence": 32
     },
     "AC_MLP_MLP_numOpp12_IDX2_CURRICULUM": {
         "opponents": [
@@ -52,9 +52,9 @@
             "TTFT",
             "GRIM"
         ],
-        "score_history": 19.8,
+        "score_history": 51.5,
         "model_path": "results/AC_MLP_MLP_numOpp12_IDX2_CURRICULUM.pth",
-        "steps_to_convergence": 49
+        "steps_to_convergence": 41
     },
     "AC_MLP_MLP_numOpp12_IDX3_CURRICULUM": {
         "opponents": [
@@ -71,9 +71,9 @@
             "TTFT",
             "GRIM"
         ],
-        "score_history": 25.4,
+        "score_history": 43.1,
         "model_path": "results/AC_MLP_MLP_numOpp12_IDX3_CURRICULUM.pth",
-        "steps_to_convergence": 49
+        "steps_to_convergence": 20
     },
     "AC_MLP_MLP_numOpp12_IDX4_CURRICULUM": {
         "opponents": [
@@ -90,7 +90,7 @@
             "TTFT",
             "GRIM"
         ],
-        "score_history": 26.35,
+        "score_history": 47.9,
         "model_path": "results/AC_MLP_MLP_numOpp12_IDX4_CURRICULUM.pth",
         "steps_to_convergence": 49
     },
@@ -109,9 +109,9 @@
             "TTFT",
             "GRIM"
         ],
-        "score_history": 21.1,
+        "score_history": 42.85,
         "model_path": "results/AC_MLP_MLP_numOpp12_IDX5_CURRICULUM.pth",
-        "steps_to_convergence": 23
+        "steps_to_convergence": 49
     },
     "AC_MLP_MLP_numOpp12_IDX6_CURRICULUM": {
         "opponents": [
@@ -128,7 +128,7 @@
             "TTFT",
             "GRIM"
         ],
-        "score_history": 21.4,
+        "score_history": 42.0,
         "model_path": "results/AC_MLP_MLP_numOpp12_IDX6_CURRICULUM.pth",
         "steps_to_convergence": 49
     },
@@ -147,9 +147,9 @@
             "TTFT",
             "GRIM"
         ],
-        "score_history": 25.6,
+        "score_history": 43.5,
         "model_path": "results/AC_MLP_MLP_numOpp12_IDX7_CURRICULUM.pth",
-        "steps_to_convergence": 49
+        "steps_to_convergence": 20
     },
     "AC_MLP_MLP_numOpp12_IDX8_CURRICULUM": {
         "opponents": [
@@ -166,7 +166,7 @@
             "TTFT",
             "GRIM"
         ],
-        "score_history": 25.6,
+        "score_history": 43.2,
         "model_path": "results/AC_MLP_MLP_numOpp12_IDX8_CURRICULUM.pth",
         "steps_to_convergence": 49
     },
@@ -185,8 +185,8 @@
             "TTFT",
             "GRIM"
         ],
-        "score_history": 20.75,
+        "score_history": 27.85,
         "model_path": "results/AC_MLP_MLP_numOpp12_IDX9_CURRICULUM.pth",
-        "steps_to_convergence": 49
+        "steps_to_convergence": 22
     }
 }

@@ -156,7 +156,7 @@ def run_all_experiments(config_name):
 
         for idx, opponent_list in enumerate(opponent_combinations):
             opponent_mix = create_opponents(opponent_list, config)
-            trainer = Trainer(env, learner, opponent_mix, k=config["training"]["k"], gamma=0.99, min_epsilon=0.2)
+            trainer = Trainer(env, learner, opponent_mix, k=config["training"]["k"], gamma=0.99, random_threshold=0.8, min_epsilon=0.2)
             opp_string = "_".join(opponent_list)  
             print(opp_string)
             

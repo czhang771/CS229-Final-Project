@@ -86,8 +86,8 @@ class Trainer:
         window_size = 3
         reward_threshold = 0.001 * PAYOFF_MATRIX[COOPERATE, COOPERATE][0] * game_length
         for i in range(epochs):
-            if i > 2 * window_size and (np.mean(self.score_history[-window_size:]) - 
-                      np.mean(self.score_history[-2*window_size:-window_size])) < reward_threshold:
+            if i > 2 * window_size and np.abs((np.mean(self.score_history[-window_size:]) - 
+                      np.mean(self.score_history[-2*window_size:-window_size]))) < reward_threshold:
                 break
             # do rollouts
             epsilon_t = min(self.min_epsilon, 1.0 - i / epochs)
@@ -114,8 +114,8 @@ class Trainer:
         # REWARD PLATEAU THRESHOLD
         reward_threshold = 0.001 * PAYOFF_MATRIX[COOPERATE, COOPERATE][0] * game_length
         for i in range(epochs):
-            if i > 2 * window_size and (np.mean(self.score_history[-window_size:]) - 
-                      np.mean(self.score_history[-2*window_size:-window_size])) < reward_threshold:
+            if i > 2 * window_size and np.abs((np.mean(self.score_history[-window_size:]) - 
+                      np.mean(self.score_history[-2*window_size:-window_size]))) < reward_threshold:
                 break
             
             epsilon_t = min(0.1, 1.0 - i / epochs)
@@ -135,6 +135,8 @@ class Trainer:
         # (inefficient) parallel environments
         envs = [self.env.copy() for _ in range(num_games)]
         states = torch.zeros(num_games, self.k, 2)
+        # randomize outside the game loop
+        opponents = [random.choice(self.opponent) for _ in range(num_games)]
 
         # initialize first values
         for i in range(num_games):
@@ -159,7 +161,7 @@ class Trainer:
                     # sampling loop
                     actions[i] = self.learner.act(states[i], epsilon = epsilon_t, random_threshold = self.random_threshold)
                     #action2 = self.opponent.act(states[i])
-                    action2 = random.choice(self.opponent).act(states[i])
+                    action2 = opponents[i].act(states[i])
                     next_state, reward1, reward2 = envs[i].step(int(actions[i]), int(action2))
                     rewards[i] = reward1
                     next_states[i, :, :] = next_state
@@ -228,13 +230,13 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     env = IPDEnvironment(payoff_matrix = PAYOFF_MATRIX, num_rounds=1000, k = k)
     #opponent = Strong() 
-    opponent = Random()
+    opponent = [Du()]
     
     # POLICY GRADIENTS EXAMPLES
     learner = PolicyGradientLearner(LogReg(d_input = STATE_DIM * k, d_output = NUM_ACTIONS), device, "adam", terminal = False, param_dict = {"lr": 0.05})
     # learner = PolicyGradientLearner(MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k]), device, "adamw", terminal = False, param_dict = {"lr": 0.01})
     # learner = PolicyGradientLearner(LSTM(d_input = STATE_DIM, d_output = NUM_ACTIONS, d_hidden = [8 * STATE_DIM, 4 * STATE_DIM]), device, "adamw", terminal = True, param_dict = {"lr": 0.01})
-    trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99, random_threshold = 0.8, min_epsilon = 0.5)
+    trainer = Trainer(env, learner, opponent, k = k, gamma = 0.99, random_threshold = 0.8, min_epsilon = 0.2)
     trainer.train_MC(epochs = 50, num_games = 10, game_length = 20, entropy_coef = 0.1)
     print(f"✅ Final Score for Agent: {env.payoff1}")
     print(f"✅ Final Score for Opponent: {env.payoff2}")

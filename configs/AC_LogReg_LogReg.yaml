@@ -1,9 +1,9 @@
-experiment_name: "AC_MLP_LSTM"
+experiment_name: "AC_LR_LR"
 
 training:
   epochs: 50
   num_games: 20
-  game_length: 10
+  game_length: 20
   k: 5
   gamma: 0.99
   learner_type: "actor_critic"  # Options: policy_gradient, actor_critic

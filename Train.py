@@ -102,8 +102,8 @@ class Trainer:
             # logging
             self.score_history.append(sum([t.my_payoff for t in trajectories]) / len(trajectories)) 
             self.loss_history.append(loss.item())
-            #if i % 1 == 0:
-                #print(f"Epoch {i}, score: {self.score_history[-1]}, loss: {self.loss_history[-1]}")
+            # if i % 1 == 0:
+            #     print(f"Epoch {i}, score: {self.score_history[-1]}, loss: {self.loss_history[-1]}")
         
         return i
 
@@ -126,8 +126,8 @@ class Trainer:
             self.learner.actor_optimizer.scheduler_step()
             self.learner.critic_optimizer.scheduler_step()
 
-            #if i % 1 == 0:
-                #print(f"Epoch {i}, score: {self.score_history[-1]}, actor loss: {self.loss_history[-1][0]}, critic loss: {self.loss_history[-1][1]}")
+            # if i % 1 == 0:
+            #     print(f"Epoch {i}, score: {self.score_history[-1]}, actor loss: {self.loss_history[-1][0]}, critic loss: {self.loss_history[-1][1]}")
         
         return i
 

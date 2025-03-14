@@ -197,6 +197,7 @@ def run_all_experiments(config_name):
             "model_path": model_path,
             "steps_to_convergence": steps
         }
+        print(all_results[save_name])
 
         print(f"Finished experiment: {save_name}")
 
@@ -207,4 +208,4 @@ def run_all_experiments(config_name):
         print(f"All results for {num_opponents} opponents saved to: {json_filename}")
 
 if __name__ == "__main__":
-    run_all_experiments("AC_LogReg_LogReg.yaml")
+    run_all_experiments("configs/AC_LogReg_LogReg.yaml")

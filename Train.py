@@ -79,9 +79,9 @@ class Trainer:
         # reset if necessary
         if eval_opponent: self.opponent = original_opponent
         
-        score = sum([t.my_payoff for t in trajectories]) / num_games
+        scores = sum([t.my_payoff for t in trajectories])   
         #print(f"Score: {score}")
-        return score
+        return scores
     
     def train_MC(self, epochs: int, game_length: int, num_games: int, entropy_coef: float = 0.0):
         """Basic implementation of a train loop"""

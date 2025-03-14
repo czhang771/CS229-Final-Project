@@ -45,7 +45,7 @@ def create_ac_learner(actor_model, critic_model_type, device, optimizer, actor_l
 def create_model(model_type, k):
     """Creates model based on config."""
     if model_type == "MLP":
-        return MLP(STATE_DIM * k, NUM_ACTIONS, [4 * k, 4 *k])
+        return MLP(STATE_DIM * k, NUM_ACTIONS, [4 * k, 4 * k])
     elif model_type == "LSTM":
         return LSTM(STATE_DIM, NUM_ACTIONS, [8 * STATE_DIM, 4 * STATE_DIM])
     else:
@@ -187,12 +187,12 @@ def run_all_experiments(config_name):
             n = config["training"]["num_opponents"]
             model_path = f"{RESULTS_DIR}/{config['experiment_name']}_{n}_{idx}_CURRICULUM.pth"
 
-        #saves model
+        # saves model
         torch.save(learner.model.state_dict(), model_path)
 
         all_results[save_name] = {
             "opponents": opponent_list,
-            "final_score": trainer.score_history[-1],
+            "score_history": trainer.score_history[-1], # final epoch average score over rollouts
             "loss_history": trainer.loss_history,
             "model_path": model_path,
             "steps_to_convergence": steps

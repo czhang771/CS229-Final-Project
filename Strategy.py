@@ -38,7 +38,7 @@ Cooperates unconditionally.
 
 """
 class Cu(Strategy):
-    def act(self, state):
+    def act(self, state, epsilon = 0.0, random_threshold = 0.8):
         return COOPERATE
     
 
@@ -46,7 +46,7 @@ class Cu(Strategy):
 Defects unconditionally.
 """   
 class Du(Strategy):
-    def act(self, state):
+    def act(self, state, epsilon = 0.0, random_threshold = 0.8):
         return DEFECT
 
 
@@ -262,10 +262,10 @@ class Strong(Strategy):
         prompt = "Given the last {} rounds of an Iterated Prisoner's Dilemma in the format (opponent move, your move):\n".format(len(state))
         for i, (my_action, opp_action) in enumerate(state, 1):
             prompt += f"{i}. ({key[int(my_action.item())]}, {key[int(opp_action.item())]})\n"
-        prompt += "\nShould you cooperate (0) or defect (1)? Remember, this is an iterated game, so always defecting is not necessarily the best strategy. Respond with only '0' or '1'."
-        #print(prompt)
+        prompt += "\nShould you cooperate (0) or defect (1)? You use the following strategy. First, remember this is an iterated game, so always defecting is not necessarily the best strategy. However, you should observe your opponent and exploit any overly cooperative patterns. You try to balance forgiveness and retaliation. You avoid *only* defecting. Respond with only '0' or '1'."
+        # print(prompt)
         response = self.model.generate_text(prompt).strip()
-        #print(response)
+        # print(response)
         if response == "0":
             return COOPERATE
         elif response == "1":
@@ -273,3 +273,221 @@ class Strong(Strategy):
         else:
             print(f"Warning: Unexpected LLM response: {response}. Defaulting to COOPERATE.")
             return COOPERATE
+import random
+from collections import defaultdict
+
+class AdaptiveMemoryStrategy(Strategy):
+    """
+    A strong IPD strategy that combines elements from the top-performing strategies
+    in the Axelrod tournaments, optimized to exploit cooperative opponents.
+    
+    Key features:
+    1. Starts cooperatively but looks for exploitation opportunities
+    2. Maintains a memory of opponent's behavior patterns
+    3. Adapts to opponent's strategy over time
+    4. Selectively forgives but prioritizes exploitation when possible
+    5. Handles noise with a pattern recognition system
+    """
+    
+    def __init__(self, memory_depth=10, noise_tolerance=0.05, exploit_threshold=0.8):
+        # Configuration parameters
+        self.memory_depth = memory_depth
+        self.noise_tolerance = noise_tolerance
+        self.exploit_threshold = exploit_threshold  # Threshold to detect exploitable opponents
+        
+        # State tracking
+        self.history = []
+        self.pattern_memory = defaultdict(lambda: {'cooperate': 0, 'defect': 0})
+        self.cooperation_rate = 1.0
+        self.exploitation_detected = False
+        self.opponent_exploitable = False
+        self.consecutive_defections = 0
+        self.consecutive_cooperations = 0
+        self.last_n_rounds = []
+        self.exploitation_mode = False
+        self.probe_cycle = 0
+        
+        # Exploitation parameters
+        self.defection_counter = 0
+        self.probe_frequency = 5  # How often to test opponent's reaction to defection
+        
+        # Initial state: cooperate on first move
+        self.initial_action = COOPERATE
+
+    def act(self, state):
+        """
+        Choose action based on game state.
+        State format is a list of tuples (agent_action, opponent_action)
+        """
+        # Check if this is the first round
+        is_first, opponent_last_move = is_first_round(state)
+        if is_first:
+            return self.initial_action
+        
+        # Update our history
+        if len(state) > 0:
+            if isinstance(state[-1][0], torch.Tensor):
+                my_last_move = int(state[-1][1].item())
+                opponent_last_move = int(state[-1][0].item())
+            else:
+                my_last_move = state[-1][1]
+                opponent_last_move = state[-1][0]
+                
+            self.history.append((my_last_move, opponent_last_move))
+            
+            # Update cooperation rate
+            if len(self.history) > 0:
+                coop_count = sum(1 for _, move in self.history if move == COOPERATE)
+                self.cooperation_rate = coop_count / len(self.history)
+            
+            # Update pattern memory with the last sequence
+            if len(self.history) >= 2:
+                # Track patterns of length 2
+                pattern = self._get_pattern(2)
+                if opponent_last_move == COOPERATE:
+                    self.pattern_memory[pattern]['cooperate'] += 1
+                else:
+                    self.pattern_memory[pattern]['defect'] += 1
+        
+        # Update streak counters
+        if opponent_last_move == DEFECT:
+            self.consecutive_defections += 1
+            self.consecutive_cooperations = 0
+            # Exit exploitation mode if opponent retaliates
+            if my_last_move == DEFECT and self.exploitation_mode:
+                self.exploitation_mode = False
+        else:
+            self.consecutive_defections = 0
+            self.consecutive_cooperations += 1
+            
+            # Check if opponent is potentially exploitable (forgives defections)
+            if my_last_move == DEFECT and opponent_last_move == COOPERATE:
+                self.defection_counter += 1
+                if self.defection_counter >= 2:
+                    self.opponent_exploitable = True
+                    self.exploitation_mode = True
+        
+        # Keep track of last n rounds for pattern matching
+        self.last_n_rounds.append(opponent_last_move)
+        if len(self.last_n_rounds) > self.memory_depth:
+            self.last_n_rounds.pop(0)
+        
+        # Detect if we're being exploited
+        if self.consecutive_defections >= 2:
+            self.exploitation_detected = True
+            self.exploitation_mode = False  # Don't try to exploit if we're being exploited
+        
+        # Check if opponent is highly cooperative
+        if len(self.history) >= 5:
+            recent_coop_rate = sum(1 for _, move in self.history[-5:] if move == COOPERATE) / 5
+            if recent_coop_rate >= self.exploit_threshold:
+                # Opponent seems very cooperative, consider exploiting
+                self.probe_cycle += 1
+                if self.probe_cycle >= self.probe_frequency:
+                    self.probe_cycle = 0
+                    # Periodically test if opponent will forgive defection
+                    if not self.exploitation_mode:
+                        return DEFECT
+        
+        # If we've detected that the opponent is a forgiving type, enter exploitation mode
+        if self.opponent_exploitable and self.consecutive_defections == 0:
+            if random.random() < 0.8:  # 80% chance to exploit, 20% chance to cooperate to maintain trust
+                self.exploitation_mode = True
+            
+        # Advanced detection of exploitation attempts by opponent
+        if len(self.history) >= 3:
+            # If opponent defected after our cooperation more than 70% of the time
+            cooperate_then_defect = sum(1 for i in range(len(self.history)-1) 
+                                       if self.history[i][0] == COOPERATE and self.history[i+1][1] == DEFECT)
+            if cooperate_then_defect > 0:
+                exploit_rate = cooperate_then_defect / sum(1 for m, _ in self.history if m == COOPERATE)
+                if exploit_rate > 0.7:
+                    self.exploitation_detected = True
+                    self.exploitation_mode = False
+        
+        # Decision logic
+        action = self._decide_action(opponent_last_move)
+        
+        return action
+
+    def _decide_action(self, opponent_last_move):
+        """Core decision logic based on observed patterns and current state"""
+        # If we're in exploitation mode and opponent seems forgiving, defect
+        if self.exploitation_mode:
+            # Occasionally cooperate to prevent opponent from switching to permanent defection
+            if self.consecutive_defections >= 3 or random.random() < 0.2:
+                return COOPERATE
+            return DEFECT
+        
+        # Always retaliate against multiple consecutive defections
+        if self.consecutive_defections >= 2:
+            return DEFECT
+        
+        # If opponent is highly cooperative (80%+ cooperation rate), periodically defect
+        if self.cooperation_rate > 0.8 and len(self.history) > 10:
+            # Test exploitation with increasing frequency as opponent proves more cooperative
+            exploit_chance = min(0.3, (self.cooperation_rate - 0.8) * 2)
+            if random.random() < exploit_chance:
+                return DEFECT
+        
+        # If opponent defected last round but has been mostly cooperative, forgive
+        if opponent_last_move == DEFECT and self.cooperation_rate > 0.7:
+            # 70% chance to forgive a single defection from a cooperative opponent
+            return COOPERATE if random.random() < 0.7 else DEFECT
+        
+        # Use pattern prediction if we have enough history
+        if len(self.history) >= 2:
+            pattern = self._get_pattern(2)
+            if pattern in self.pattern_memory:
+                coop_count = self.pattern_memory[pattern]['cooperate']
+                defect_count = self.pattern_memory[pattern]['defect']
+                total = coop_count + defect_count
+                
+                if total >= 2:  # Only use pattern if we've seen it enough times
+                    if defect_count / total > 0.7:  # Pattern predicts defection
+                        return DEFECT
+                    elif coop_count / total > 0.7:  # Pattern predicts cooperation
+                        # If opponent is predicted to cooperate, occasionally exploit
+                        if random.random() < 0.3:
+                            return DEFECT
+                        return COOPERATE
+        
+        # If opponent has cooperated many times in a row, occasionally defect
+        if self.consecutive_cooperations >= 4:
+            return DEFECT if random.random() < 0.4 else COOPERATE
+        
+        # Handle exploitation attempts
+        if self.exploitation_detected:
+            # When being exploited, use a more defensive approach
+            if self.cooperation_rate < 0.3:  # If opponent rarely cooperates
+                return DEFECT
+            else:
+                # Try to reset relationship but be cautious
+                self.exploitation_detected = False
+                return COOPERATE if random.random() < 0.5 else DEFECT
+        
+        # TFT-like behavior as default, with slight bias toward defection
+        return opponent_last_move if random.random() < 0.9 else DEFECT
+
+    def _get_pattern(self, length):
+        """Extract the recent pattern of plays of specified length"""
+        if len(self.history) < length:
+            return None
+        
+        # Convert recent history to a pattern string
+        pattern = tuple(move for _, move in self.history[-length:])
+        return pattern
+
+    def reset(self):
+        """Reset the strategy state between games"""
+        self.history = []
+        self.pattern_memory = defaultdict(lambda: {'cooperate': 0, 'defect': 0})
+        self.cooperation_rate = 1.0
+        self.exploitation_detected = False
+        self.opponent_exploitable = False
+        self.consecutive_defections = 0
+        self.consecutive_cooperations = 0
+        self.last_n_rounds = []
+        self.exploitation_mode = False
+        self.probe_cycle = 0
+        self.defection_counter = 0

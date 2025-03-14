@@ -34,7 +34,7 @@ class Trainer:
         self.gamma = gamma
         self.random_threshold = random_threshold
 
-    def rollout(self, game_length: int, num_games: int, epsilon_t: float = 1.0):
+    def rollout(self, game_length: int, num_games: int, epsilon_t: float = 1.0, verbose: bool = False):
         """Play num_games of length game_length against opponent (randomly selected), return trajectories"""
         
         trajectories = []
@@ -53,6 +53,7 @@ class Trainer:
                 action1 = self.learner.act(state, epsilon = epsilon_t, random_threshold = self.random_threshold)
                 #action1 = random.choice([COOPERATE, DEFECT])
                 action2 = opponent.act(state)
+                if verbose: print(f"agent: {action1}, opponent: {action2}")
                 next_state, reward1, reward2 = self.env.step(action1, action2)
             
             #self.env.print_game_sequence()
@@ -65,13 +66,13 @@ class Trainer:
             #print(self.env.history)
         return trajectories
 
-    def evaluate(self, game_length: int, num_games: int, eval_opponent: Strategy = None):
+    def evaluate(self, game_length: int, num_games: int, eval_opponent: Strategy = None, verbose: bool = False):
         """Evaluate against (potentially) different opponent"""
         if eval_opponent:
             original_opponent = self.opponent
             self.opponent = eval_opponent
         
-        trajectories = self.rollout(game_length, num_games)
+        trajectories = self.rollout(game_length, num_games, verbose = verbose)
         
         # reset if necessary
         if eval_opponent: self.opponent = original_opponent

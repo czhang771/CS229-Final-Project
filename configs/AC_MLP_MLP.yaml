@@ -1,7 +1,7 @@
-experiment_name: "AC_MLP_MLP_more"
+experiment_name: "AC_MLP_MLP_most"
 
 training:
-  epochs: 100
+  epochs: 500
   num_games: 20
   game_length: 20
   k: 5

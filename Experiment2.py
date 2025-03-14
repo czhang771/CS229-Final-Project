@@ -136,6 +136,7 @@ def run_all_experiments(config_name):
     
 
     for num_opponents in range(1, 14):
+        # set random seed
         all_results = {}
         print(num_opponents)
         opponent_combinations = create_opponent_combinations(config, num_opponents, curriculum)  

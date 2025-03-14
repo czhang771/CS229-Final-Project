@@ -1,10 +1,12 @@
 from Model import LSTM, MLP, LogReg
-import IPDEnvironment
+from IPDEnvironment import IPDEnvironment
 import Strategy
 import torch
 import Train
 import json
-
+import yaml
+from Learner import ActorCriticLearner, PolicyGradientLearner
+import Experiment2
 k = 5
 STATE_DIM = 2
 NUM_ACTIONS = 2
@@ -25,22 +27,45 @@ def load_model(model_path):
     return model
 
 
-def evaluate_model(path, num_games, game_length):
+def evaluate_model(results_stem, path, num_games, game_length):
     """Evaluate model against strong opponent"""
+    # use details from results_stem config file
+    with open(f"configs/{results_stem}.yaml", 'r') as f:
+        config = yaml.safe_load(f)
+    
+    optimizer = config['hyperparameters']['optimizers']
     model = load_model(path)
-    opponent = Strategy.Strong()
-    env = IPDEnvironment(payoff_matrix = Train.PAYOFF_MATRIX, num_rounds = num_games, k = k)
+    if results_stem.split('_')[0] == "AC":
+        model = Experiment2.create_ac_learner(model, config['model']['critic_model'], "cpu", optimizer, config['hyperparameters']['actor_lr'], config['hyperparameters']['critic_lr'], config['hyperparameters']['scheduler_types'], config['hyperparameters']['scheduler_params'], k)
+    else:
+        model = Experiment2.create_pg_learner(model, "cpu", optimizer, config['hyperparameters']['actor_lr'], config['hyperparameters']['scheduler_types'], config['hyperparameters']['scheduler_params'])
+    
+    # random initialization
+    # model = PolicyGradientLearner(MLP(d_input = STATE_DIM * k, d_output = NUM_ACTIONS, d_hidden = [4 * k, 4 * k]), device = "cpu", optimizer_name = "adamw", param_dict = {"lr": 0.01})
+    # model = Strategy.Cu()
+    opponent = [Strategy.AdaptiveMemoryStrategy()]
+    env = IPDEnvironment(payoff_matrix = Train.PAYOFF_MATRIX, num_rounds = 100, k = k)
     trainer = Train.Trainer(env, model, opponent, k = k, gamma = 0.99, random_threshold = 0.5, min_epsilon = 0.1)
-    scores = trainer.evaluate(game_length, num_games)
+    scores = trainer.evaluate(game_length = game_length, num_games = num_games, verbose = False)
     return scores
 
-def evaluate_all_models(results_path):
+def evaluate_all_models(results_stem):
     """Evaluate all models in results_path"""
-    with open(results_path, 'r') as f:
-        results = json.load(f)
-    
-    for result in results:
-        result['scores'] = evaluate_model(path =result['model_path'], num_games = 1, game_length = result['game_length'])
-        # save to json
-        json.dump(result, open(results_path + '_evaluated.json', 'w'))
-    json.dump(results, open(results_path + '_evaluated.json', 'w'))
+    new_results = {}
+
+    for i in range(1, 14):
+        results_path = f"results/{results_stem}_numOpp{i}_CURRICULUMTrue.json"
+        with open(results_path, 'r') as f:
+            results = json.load(f)
+
+        for result in results:
+            new_results[result] = results[result]
+            new_results[result]['scores'] = evaluate_model(results_stem = results_stem, path = results[result]['model_path'], num_games = 1, game_length = 20)
+            # save to json
+            print(new_results[result]['scores'])
+        
+        json.dump(new_results, open(f"results/{results_stem}_evaluated.json", 'w'))
+
+if __name__ == "__main__":
+    # print(evaluate_model(None, 20, 1))
+    evaluate_all_models("AC_MLP_LSTM")

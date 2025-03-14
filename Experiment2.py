@@ -187,7 +187,7 @@ def run_all_experiments(config_name):
             else:
                 save_name = f"{config['experiment_name']}_OPP{opp_string}"
 
-            model_path = f"{RESULTS_DIR}/{save_name}.pth"
+            model_path = f"{RESULTS_DIR}{save_name}.pth"
             torch.save(learner.model.state_dict(), model_path)
 
         all_results[save_name] = {
@@ -201,7 +201,7 @@ def run_all_experiments(config_name):
 
         print(f"Finished experiment: {save_name}")
 
-        json_filename = f"{RESULTS_DIR}/{config['experiment_name']}_numOpp{num_opponents}.json"
+        json_filename = f"{RESULTS_DIR}{config['experiment_name']}_numOpp{num_opponents}.json"
         with open(json_filename, "w") as f:
             json.dump(all_results, f, indent=4)
 

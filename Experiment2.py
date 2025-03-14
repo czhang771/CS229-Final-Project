@@ -17,6 +17,8 @@ PAYOFF_MATRIX = {
     (1, 1): (1, 1),
 }
 
+STRATEGY_ORDER = ["Cu", "Du", "Random", "Cp", "TFT", "STFT", "GTFT", "GrdTFT", "ImpTFT", "TFTT", "TTFT", "GRIM", "WSLS"]
+
 RESULTS_DIR = "results/"
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
@@ -49,7 +51,7 @@ def create_model(model_type, k):
     else:
         raise ValueError(f"Unsupported model type: {model_type}")
 
-def create_opponent_combinations(config):
+def create_opponent_combinations(config, curriculum = False):
     """
     Generate all possible opponent sets of fixed size.
 
@@ -63,16 +65,22 @@ def create_opponent_combinations(config):
     num_opps = config["opponents"]["training"]["num_opponents"]
     num_samples = config["opponents"]["training"]["num_samples"]
 
-    # Generate all possible subsets of size `num_opps`
-    all_combinations = list(itertools.combinations(all_strategies, num_opps))
+    if not curriculum:
+        # Generate all possible subsets of size `num_opps`
+        all_combinations = list(itertools.combinations(all_strategies, num_opps))
 
-    # Ensure we don't sample more than possible combinations
-    num_samples = min(num_samples, len(all_combinations))
+        # Ensure we don't sample more than possible combinations
+        num_samples = min(num_samples, len(all_combinations))
 
-    # Randomly sample `num_samples` unique combinations
-    sampled_combinations = random.sample(all_combinations, num_samples)
+        # Randomly sample `num_samples` unique combinations
+        sampled_combinations = random.sample(all_combinations, num_samples)
 
-    return [list(combo) for combo in sampled_combinations]
+        return [list(combo) for combo in sampled_combinations]
+    else:
+        # use strategy order from strategy_map
+        subset = [STRATEGY_ORDER[i] for i in range(num_opps)]
+        # create num_samples deep copies of the subset
+        return [subset.copy() for _ in range(num_samples)]
 
 def create_opponents(opponent_names, config):
     """
@@ -117,12 +125,14 @@ def create_opponents(opponent_names, config):
 
 def run_all_experiments(config_name):
     """Runs all experiments with dynamically generated opponent combinations of fixed size."""
+
     config, config_filename = load_config(config_name)
     env = IPDEnvironment(payoff_matrix=PAYOFF_MATRIX, num_rounds=config["training"]["num_games"], k=config["training"]["k"])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     k = config["training"]["k"]
+    curriculum = config["training"]["curriculum"]
 
-    opponent_combinations = create_opponent_combinations(config)  
+    opponent_combinations = create_opponent_combinations(config, curriculum)  
 
     actor_model = create_model(config["model"]["actor_model"], k)
     optimizer = config["hyperparameters"]["optimizers"]
@@ -143,10 +153,11 @@ def run_all_experiments(config_name):
 
     for idx, opponent_list in enumerate(opponent_combinations):
         opponent_mix = create_opponents(opponent_list, config)
-        trainer = Trainer(env, learner, opponent_mix, k=config["training"]["k"], gamma=0.99)
+        trainer = Trainer(env, learner, opponent_mix, k=config["training"]["k"], gamma=0.99, min_epsilon=0.2)
         opp_string = "_".join(opponent_list)  
         print(opp_string)
         
+        steps = 0
         if config["training"]["learner_type"] == "policy_gradient":
             """
             trainer.train_MC(epochs=int(config["training"]["epochs"]),
@@ -155,21 +166,26 @@ def run_all_experiments(config_name):
                              entropy_coef=0)
             """
             
-            #trainer.train_MC(int(config["training"]["epochs"]),int(config["training"]["game_length"]),int(config["training"]["num_games"]))
+            steps = trainer.train_MC(int(config["training"]["epochs"]),
+                             int(config["training"]["game_length"]),
+                             int(config["training"]["num_games"]))
         
-            trainer.train_MC(50, 20, 10)
+            # trainer.train_MC(epochs=50, num_games=20, game_length=10, entropy_coef=0.1)
         elif config["training"]["learner_type"] == "actor_critic":
-            trainer.train_AC(epochs=int(config["training"]["epochs"]), 
+            steps = trainer.train_AC(epochs=int(config["training"]["epochs"]), 
                              game_length=int(config["training"]["game_length"]),
                             num_games=int(config["training"]["num_games"]), 
                             batch_size=int(config["training"]["batch_size"]))
 
 
         # Save results
-        opp_string = "_".join(opponent_list)  
-        save_name = f"{config['experiment_name']}_OPP{opp_string}"
-
-        model_path = f"{RESULTS_DIR}/{save_name}.pth"
+        if not curriculum:
+            opp_string = "_".join(opponent_list)  
+            save_name = f"{config['experiment_name']}_OPP{opp_string}"
+            model_path = f"{RESULTS_DIR}/{save_name}.pth"
+        else:
+            n = config["training"]["num_opponents"]
+            model_path = f"{RESULTS_DIR}/{config['experiment_name']}_{n}_{idx}_CURRICULUM.pth"
 
         #saves model
         torch.save(learner.model.state_dict(), model_path)
@@ -178,7 +194,8 @@ def run_all_experiments(config_name):
             "opponents": opponent_list,
             "final_score": trainer.score_history[-1],
             "loss_history": trainer.loss_history,
-            "model_path": model_path
+            "model_path": model_path,
+            "steps_to_convergence": steps
         }
 
         print(f"Finished experiment: {save_name}")

@@ -8,6 +8,7 @@ training:
   gamma: 0.99
   learner_type: "policy_gradient"  # Options: policy_gradient, actor_critic
   batch_size: 10 # only needed for actor_critic
+  curriculum: false
 
 hyperparameters: 
   actor_lr: 0.01
@@ -20,7 +21,7 @@ opponents:
   training: 
     available_strategies: ["Cu", "Du", "Random", "Cp", "TFT", "STFT", "GTFT", "GrdTFT", "ImpTFT", "TFTT", "TTFT","GRIM", "WSLS"]
     num_opponents: 2
-    num_samples: 13 
+    num_samples: 10
 
 model:
   actor_model: "LSTM" # Options: MLP, LSTM, LogReg

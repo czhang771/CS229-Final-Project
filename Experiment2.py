@@ -200,7 +200,7 @@ def run_all_experiments(config_name):
 
             print(f"Finished experiment: {save_name}")
 
-        json_filename = f"{RESULTS_DIR}{config['experiment_name']}_numOpp{num_opponents}.json"
+        json_filename = f"{RESULTS_DIR}{config['experiment_name']}_numOpp{num_opponents}_CURRICULUM{curriculum}.json"
         with open(json_filename, "w") as f:
             json.dump(all_results, f, indent=4)
 

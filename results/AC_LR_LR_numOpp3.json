@@ -1,0 +1,132 @@
+{
+    "AC_LR_LR_OPPCu_Du_GrdTFT": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "GrdTFT"
+        ],
+        "score_history": 45.0,
+        "model_path": "results/AC_LR_LR_OPPCu_Du_GrdTFT.pth",
+        "steps_to_convergence": 46
+    },
+    "AC_LR_LR_OPPSTFT_TFTT_WSLS": {
+        "opponents": [
+            "STFT",
+            "TFTT",
+            "WSLS"
+        ],
+        "score_history": 59.0,
+        "model_path": "results/AC_LR_LR_OPPSTFT_TFTT_WSLS.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_LR_LR_OPPDu_Random_GRIM": {
+        "opponents": [
+            "Du",
+            "Random",
+            "GRIM"
+        ],
+        "score_history": 8.9,
+        "model_path": "results/AC_LR_LR_OPPDu_Random_GRIM.pth",
+        "steps_to_convergence": 32
+    },
+    "AC_LR_LR_OPPGrdTFT_ImpTFT_WSLS": {
+        "opponents": [
+            "GrdTFT",
+            "ImpTFT",
+            "WSLS"
+        ],
+        "score_history": 54.55,
+        "model_path": "results/AC_LR_LR_OPPGrdTFT_ImpTFT_WSLS.pth",
+        "steps_to_convergence": 13
+    },
+    "AC_LR_LR_OPPCp_STFT_WSLS": {
+        "opponents": [
+            "Cp",
+            "STFT",
+            "WSLS"
+        ],
+        "score_history": 57.0,
+        "model_path": "results/AC_LR_LR_OPPCp_STFT_WSLS.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_LR_LR_OPPCu_TFT_TTFT": {
+        "opponents": [
+            "Cu",
+            "TFT",
+            "TTFT"
+        ],
+        "score_history": 59.25,
+        "model_path": "results/AC_LR_LR_OPPCu_TFT_TTFT.pth",
+        "steps_to_convergence": 13
+    },
+    "AC_LR_LR_OPPDu_GTFT_GrdTFT": {
+        "opponents": [
+            "Du",
+            "GTFT",
+            "GrdTFT"
+        ],
+        "score_history": 33.1,
+        "model_path": "results/AC_LR_LR_OPPDu_GTFT_GrdTFT.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_LR_LR_OPPDu_GTFT_ImpTFT": {
+        "opponents": [
+            "Du",
+            "GTFT",
+            "ImpTFT"
+        ],
+        "score_history": 40.2,
+        "model_path": "results/AC_LR_LR_OPPDu_GTFT_ImpTFT.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_LR_LR_OPPRandom_TTFT_WSLS": {
+        "opponents": [
+            "Random",
+            "TTFT",
+            "WSLS"
+        ],
+        "score_history": 47.65,
+        "model_path": "results/AC_LR_LR_OPPRandom_TTFT_WSLS.pth",
+        "steps_to_convergence": 14
+    },
+    "AC_LR_LR_OPPSTFT_ImpTFT_TFTT": {
+        "opponents": [
+            "STFT",
+            "ImpTFT",
+            "TFTT"
+        ],
+        "score_history": 57.75,
+        "model_path": "results/AC_LR_LR_OPPSTFT_ImpTFT_TFTT.pth",
+        "steps_to_convergence": 46
+    },
+    "AC_LR_LR_OPPRandom_GrdTFT_GRIM": {
+        "opponents": [
+            "Random",
+            "GrdTFT",
+            "GRIM"
+        ],
+        "score_history": 26.05,
+        "model_path": "results/AC_LR_LR_OPPRandom_GrdTFT_GRIM.pth",
+        "steps_to_convergence": 11
+    },
+    "AC_LR_LR_OPPRandom_Cp_TFT": {
+        "opponents": [
+            "Random",
+            "Cp",
+            "TFT"
+        ],
+        "score_history": 44.4,
+        "model_path": "results/AC_LR_LR_OPPRandom_Cp_TFT.pth",
+        "steps_to_convergence": 34
+    },
+    "AC_LR_LR_OPPDu_GTFT_TFTT": {
+        "opponents": [
+            "Du",
+            "GTFT",
+            "TFTT"
+        ],
+        "score_history": 33.15,
+        "model_path": "results/AC_LR_LR_OPPDu_GTFT_TFTT.pth",
+        "steps_to_convergence": 26
+    }
+}

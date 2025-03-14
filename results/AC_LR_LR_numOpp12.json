@@ -1,0 +1,249 @@
+{
+    "AC_LR_LR_OPPCu_Du_Random_Cp_TFT_STFT_GTFT_GrdTFT_ImpTFT_TFTT_GRIM_WSLS": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp",
+            "TFT",
+            "STFT",
+            "GTFT",
+            "GrdTFT",
+            "ImpTFT",
+            "TFTT",
+            "GRIM",
+            "WSLS"
+        ],
+        "score_history": 44.45,
+        "model_path": "results/AC_LR_LR_OPPCu_Du_Random_Cp_TFT_STFT_GTFT_GrdTFT_ImpTFT_TFTT_GRIM_WSLS.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_LR_LR_OPPCu_Du_Random_Cp_TFT_STFT_GrdTFT_ImpTFT_TFTT_TTFT_GRIM_WSLS": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp",
+            "TFT",
+            "STFT",
+            "GrdTFT",
+            "ImpTFT",
+            "TFTT",
+            "TTFT",
+            "GRIM",
+            "WSLS"
+        ],
+        "score_history": 48.0,
+        "model_path": "results/AC_LR_LR_OPPCu_Du_Random_Cp_TFT_STFT_GrdTFT_ImpTFT_TFTT_TTFT_GRIM_WSLS.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_LR_LR_OPPCu_Du_Random_Cp_TFT_STFT_GTFT_ImpTFT_TFTT_TTFT_GRIM_WSLS": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp",
+            "TFT",
+            "STFT",
+            "GTFT",
+            "ImpTFT",
+            "TFTT",
+            "TTFT",
+            "GRIM",
+            "WSLS"
+        ],
+        "score_history": 50.8,
+        "model_path": "results/AC_LR_LR_OPPCu_Du_Random_Cp_TFT_STFT_GTFT_ImpTFT_TFTT_TTFT_GRIM_WSLS.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_LR_LR_OPPCu_Du_Random_Cp_TFT_GTFT_GrdTFT_ImpTFT_TFTT_TTFT_GRIM_WSLS": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp",
+            "TFT",
+            "GTFT",
+            "GrdTFT",
+            "ImpTFT",
+            "TFTT",
+            "TTFT",
+            "GRIM",
+            "WSLS"
+        ],
+        "score_history": 45.95,
+        "model_path": "results/AC_LR_LR_OPPCu_Du_Random_Cp_TFT_GTFT_GrdTFT_ImpTFT_TFTT_TTFT_GRIM_WSLS.pth",
+        "steps_to_convergence": 7
+    },
+    "AC_LR_LR_OPPCu_Du_Random_Cp_TFT_STFT_GTFT_GrdTFT_ImpTFT_TFTT_TTFT_GRIM": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp",
+            "TFT",
+            "STFT",
+            "GTFT",
+            "GrdTFT",
+            "ImpTFT",
+            "TFTT",
+            "TTFT",
+            "GRIM"
+        ],
+        "score_history": 50.3,
+        "model_path": "results/AC_LR_LR_OPPCu_Du_Random_Cp_TFT_STFT_GTFT_GrdTFT_ImpTFT_TFTT_TTFT_GRIM.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_LR_LR_OPPDu_Random_Cp_TFT_STFT_GTFT_GrdTFT_ImpTFT_TFTT_TTFT_GRIM_WSLS": {
+        "opponents": [
+            "Du",
+            "Random",
+            "Cp",
+            "TFT",
+            "STFT",
+            "GTFT",
+            "GrdTFT",
+            "ImpTFT",
+            "TFTT",
+            "TTFT",
+            "GRIM",
+            "WSLS"
+        ],
+        "score_history": 30.0,
+        "model_path": "results/AC_LR_LR_OPPDu_Random_Cp_TFT_STFT_GTFT_GrdTFT_ImpTFT_TFTT_TTFT_GRIM_WSLS.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_LR_LR_OPPCu_Random_Cp_TFT_STFT_GTFT_GrdTFT_ImpTFT_TFTT_TTFT_GRIM_WSLS": {
+        "opponents": [
+            "Cu",
+            "Random",
+            "Cp",
+            "TFT",
+            "STFT",
+            "GTFT",
+            "GrdTFT",
+            "ImpTFT",
+            "TFTT",
+            "TTFT",
+            "GRIM",
+            "WSLS"
+        ],
+        "score_history": 42.3,
+        "model_path": "results/AC_LR_LR_OPPCu_Random_Cp_TFT_STFT_GTFT_GrdTFT_ImpTFT_TFTT_TTFT_GRIM_WSLS.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_LR_LR_OPPCu_Du_Random_Cp_TFT_STFT_GTFT_GrdTFT_ImpTFT_TTFT_GRIM_WSLS": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp",
+            "TFT",
+            "STFT",
+            "GTFT",
+            "GrdTFT",
+            "ImpTFT",
+            "TTFT",
+            "GRIM",
+            "WSLS"
+        ],
+        "score_history": 47.3,
+        "model_path": "results/AC_LR_LR_OPPCu_Du_Random_Cp_TFT_STFT_GTFT_GrdTFT_ImpTFT_TTFT_GRIM_WSLS.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_LR_LR_OPPCu_Du_Random_TFT_STFT_GTFT_GrdTFT_ImpTFT_TFTT_TTFT_GRIM_WSLS": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "TFT",
+            "STFT",
+            "GTFT",
+            "GrdTFT",
+            "ImpTFT",
+            "TFTT",
+            "TTFT",
+            "GRIM",
+            "WSLS"
+        ],
+        "score_history": 34.2,
+        "model_path": "results/AC_LR_LR_OPPCu_Du_Random_TFT_STFT_GTFT_GrdTFT_ImpTFT_TFTT_TTFT_GRIM_WSLS.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_LR_LR_OPPCu_Du_Random_Cp_TFT_STFT_GTFT_GrdTFT_TFTT_TTFT_GRIM_WSLS": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp",
+            "TFT",
+            "STFT",
+            "GTFT",
+            "GrdTFT",
+            "TFTT",
+            "TTFT",
+            "GRIM",
+            "WSLS"
+        ],
+        "score_history": 39.3,
+        "model_path": "results/AC_LR_LR_OPPCu_Du_Random_Cp_TFT_STFT_GTFT_GrdTFT_TFTT_TTFT_GRIM_WSLS.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_LR_LR_OPPCu_Du_Random_Cp_TFT_STFT_GTFT_GrdTFT_ImpTFT_TFTT_TTFT_WSLS": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp",
+            "TFT",
+            "STFT",
+            "GTFT",
+            "GrdTFT",
+            "ImpTFT",
+            "TFTT",
+            "TTFT",
+            "WSLS"
+        ],
+        "score_history": 42.8,
+        "model_path": "results/AC_LR_LR_OPPCu_Du_Random_Cp_TFT_STFT_GTFT_GrdTFT_ImpTFT_TFTT_TTFT_WSLS.pth",
+        "steps_to_convergence": 18
+    },
+    "AC_LR_LR_OPPCu_Du_Cp_TFT_STFT_GTFT_GrdTFT_ImpTFT_TFTT_TTFT_GRIM_WSLS": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Cp",
+            "TFT",
+            "STFT",
+            "GTFT",
+            "GrdTFT",
+            "ImpTFT",
+            "TFTT",
+            "TTFT",
+            "GRIM",
+            "WSLS"
+        ],
+        "score_history": 61.4,
+        "model_path": "results/AC_LR_LR_OPPCu_Du_Cp_TFT_STFT_GTFT_GrdTFT_ImpTFT_TFTT_TTFT_GRIM_WSLS.pth",
+        "steps_to_convergence": 49
+    },
+    "AC_LR_LR_OPPCu_Du_Random_Cp_STFT_GTFT_GrdTFT_ImpTFT_TFTT_TTFT_GRIM_WSLS": {
+        "opponents": [
+            "Cu",
+            "Du",
+            "Random",
+            "Cp",
+            "STFT",
+            "GTFT",
+            "GrdTFT",
+            "ImpTFT",
+            "TFTT",
+            "TTFT",
+            "GRIM",
+            "WSLS"
+        ],
+        "score_history": 52.9,
+        "model_path": "results/AC_LR_LR_OPPCu_Du_Random_Cp_STFT_GTFT_GrdTFT_ImpTFT_TFTT_TTFT_GRIM_WSLS.pth",
+        "steps_to_convergence": 16
+    }
+}
